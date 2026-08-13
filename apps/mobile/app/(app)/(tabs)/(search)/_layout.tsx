@@ -1,0 +1,38 @@
+import { Stack } from "expo-router";
+
+export default function SearchLayout() {
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="recent-searches"
+        options={({ route }) => ({
+          animation: (route.params as { instant?: string } | undefined)?.instant
+            ? "none"
+            : undefined,
+        })}
+      />
+      <Stack.Screen name="search-results" />
+      <Stack.Screen name="albums/[id]" />
+      <Stack.Screen name="artists/[id]" />
+      <Stack.Screen name="artists/[id]/biography" />
+      <Stack.Screen name="artists/[id]/discography" />
+      <Stack.Screen name="artists/[id]/liked-songs" />
+      <Stack.Screen name="playlists/[id]/index" />
+      <Stack.Screen name="playlists/[id]/search" />
+      <Stack.Screen name="playlists/add-to-playlist" />
+      <Stack.Screen name="genres/[id]" />
+      <Stack.Screen name="tracks/[id]/similar" />
+      <Stack.Screen name="settings/index" />
+      <Stack.Screen name="settings/[section]" />
+      <Stack.Screen name="trusted-certificates" />
+      <Stack.Screen name="offline-downloads" />
+      <Stack.Screen name="pending-changes" />
+      <Stack.Screen name="servers" />
+      <Stack.Screen name="shares" />
+      <Stack.Screen name="libraries" />
+      <Stack.Screen name="activity" />
+      <Stack.Screen name="queue" />
+    </Stack>
+  );
+}

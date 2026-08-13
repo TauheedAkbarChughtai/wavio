@@ -1,0 +1,379 @@
+import { FlashList } from "@shopify/flash-list";
+import { useForm, useStore } from "@tanstack/react-form";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import Fuse, { type FuseResult } from "fuse.js";
+import ArrowLeft from "lucide-react-native/dist/esm/icons/arrow-left.mjs";
+import X from "lucide-react-native/dist/esm/icons/x.mjs";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Uniwind } from "uniwind";
+import EmptyDisplay from "@/components/EmptyDisplay";
+import ErrorDisplay from "@/components/ErrorDisplay";
+import FadeOutScaleDown from "@/components/FadeOutScaleDown";
+import LibraryListItem, {
+  type Favorites,
+  type LibraryFolder,
+  type LibraryRadioStation,
+} from "@/components/library/LibraryListItem";
+import LibraryListItemSkeleton from "@/components/library/LibraryListItemSkeleton";
+import { Badge, BadgeText } from "@/components/ui/badge";
+import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
+import { Input, InputField, InputIcon, InputSlot } from "@/components/ui/input";
+import { ScrollView } from "@/components/ui/scroll-view";
+import { useMusicFolders } from "@/hooks/backend/useBrowsing";
+import { useStarred2 } from "@/hooks/backend/useLists";
+import { usePlaylists } from "@/hooks/backend/usePlaylists";
+import useDebounce from "@/hooks/useDebounce";
+import { useScopedRadioFavorites } from "@/hooks/useRadioFavorites";
+import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
+import type {
+  AlbumID3,
+  ArtistID3,
+  Playlist,
+} from "@/services/openSubsonic/types";
+import { useCurrentMusicFolderId } from "@/stores/musicFolders";
+import { loadingData } from "@/utils/loadingData";
+import { goBackOrHome } from "@/utils/navigation";
+import { cn } from "@/utils/tailwind";
+
+type SearchFilter =
+  | "albums"
+  | "artists"
+  | "playlists"
+  | "radioStations"
+  | "folders";
+
+export default function LibrarySearchScreen() {
+  const [primary50] = Uniwind.getCSSVariable([
+    "--color-primary-50",
+  ]) as string[];
+  const { t } = useTranslation();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const screenBottomPadding = useScreenBottomPadding();
+  const form = useForm({
+    defaultValues: {
+      query: "",
+    },
+  });
+  const query = useStore(form.store, (state) => state.values.query);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const debounce = useDebounce(150);
+  const musicFolderId = useCurrentMusicFolderId();
+  const favoriteRadioStations = useScopedRadioFavorites();
+  const [filter, setFilter] = useState<SearchFilter[]>([]);
+
+  useEffect(() => {
+    debounce(() => setDebouncedQuery(query));
+  }, [query, debounce]);
+
+  const {
+    data: starredData,
+    isLoading: isLoadingStarred,
+    error: starredError,
+  } = useStarred2({ musicFolderId });
+  const {
+    data: playlistsData,
+    isLoading: isLoadingPlaylists,
+    error: playlistsError,
+  } = usePlaylists({});
+  const {
+    data: musicFoldersData,
+    isLoading: isLoadingMusicFolders,
+    error: musicFoldersError,
+  } = useMusicFolders();
+
+  const handleSearchClearPress = () => {
+    form.setFieldValue("query", "");
+  };
+
+  const handleFilterPress = (type: SearchFilter) => {
+    setFilter(
+      filter.includes(type)
+        ? filter.filter((f) => f !== type)
+        : [...filter, type],
+    );
+  };
+
+  const fuse = useMemo(() => {
+    if (!starredData?.starred2 || !playlistsData?.playlists) {
+      return null;
+    }
+    const noFilter = filter.length === 0;
+    const items: Array<unknown> = [];
+    if (
+      (noFilter || filter.includes("artists")) &&
+      starredData.starred2.artist
+    ) {
+      items.push(starredData.starred2.artist);
+    }
+    if ((noFilter || filter.includes("albums")) && starredData.starred2.album) {
+      items.push(starredData.starred2.album);
+    }
+    if (
+      (noFilter || filter.includes("playlists")) &&
+      playlistsData.playlists.playlist
+    ) {
+      items.push(playlistsData.playlists.playlist);
+    }
+    if (
+      (noFilter || filter.includes("folders")) &&
+      musicFoldersData?.musicFolders?.musicFolder
+    ) {
+      items.push(
+        musicFoldersData.musicFolders.musicFolder.map((f) => ({
+          id: String(f.id),
+          name: f.name ?? `Library ${f.id}`,
+          isFolder: true,
+        })),
+      );
+    }
+    if (
+      (noFilter || filter.includes("radioStations")) &&
+      favoriteRadioStations.length > 0
+    ) {
+      items.push(
+        favoriteRadioStations.map((r) => ({
+          id: r.id,
+          name: r.name,
+          isRadioStation: true,
+          imageUrl: r.imageUrl,
+          streamUrl: r.streamUrl,
+          homePageUrl: r.homePageUrl,
+          tags: r.tags,
+          source: r.source,
+        })),
+      );
+    }
+
+    return new Fuse<
+      AlbumID3 &
+        Playlist &
+        ArtistID3 &
+        Favorites &
+        LibraryFolder &
+        LibraryRadioStation
+    >(
+      items.flat() as Array<
+        AlbumID3 &
+          Playlist &
+          ArtistID3 &
+          Favorites &
+          LibraryFolder &
+          LibraryRadioStation
+      >,
+      {
+        includeScore: true,
+        ignoreDiacritics: true,
+        keys: ["name"],
+      },
+    );
+  }, [
+    starredData,
+    playlistsData,
+    musicFoldersData,
+    favoriteRadioStations,
+    filter,
+  ]);
+
+  const data = useMemo(() => {
+    if (!fuse || !debouncedQuery) return [];
+    return fuse.search(debouncedQuery);
+  }, [fuse, debouncedQuery]);
+
+  return (
+    <Box className="h-full flex-1">
+      <Box
+        className="bg-primary-600 px-6 py-6 mb-6"
+        style={{ paddingTop: insets.top + 24 }}
+      >
+        <HStack className="items-center">
+          <FadeOutScaleDown
+            className="mr-4"
+            onPress={() => goBackOrHome(router)}
+          >
+            <ArrowLeft size={24} color="white" />
+          </FadeOutScaleDown>
+          <form.Field name="query">
+            {(field) => (
+              <Input className="flex-1 border-0">
+                <InputField
+                  disableFullscreenUI
+                  className="text-white text-xl"
+                  placeholder={t("app.library.search.inputPlaceholder")}
+                  placeholderTextColor={primary50}
+                  type="text"
+                  value={field.state.value}
+                  onChangeText={field.handleChange}
+                  onBlur={field.handleBlur}
+                  enterKeyHint="search"
+                />
+                <InputSlot className="pr-3" onPress={handleSearchClearPress}>
+                  <InputIcon as={X} size="xl" />
+                </InputSlot>
+              </Input>
+            )}
+          </form.Field>
+        </HStack>
+      </Box>
+      <Box className="relative mb-6">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="grow-0"
+          contentContainerStyle={{ paddingHorizontal: 24 }}
+        >
+          <FadeOutScaleDown onPress={() => handleFilterPress("albums")}>
+            <Badge
+              className={cn("rounded-full bg-gray-800 px-4 py-1 mr-2", {
+                "bg-emerald-500": filter.includes("albums"),
+              })}
+            >
+              <BadgeText className="normal-case text-md text-white">
+                {t("app.shared.album_other")}
+              </BadgeText>
+            </Badge>
+          </FadeOutScaleDown>
+          <FadeOutScaleDown onPress={() => handleFilterPress("artists")}>
+            <Badge
+              className={cn("rounded-full bg-gray-800 px-4 py-1 mr-2", {
+                "bg-emerald-500": filter.includes("artists"),
+              })}
+            >
+              <BadgeText className="normal-case text-md text-white">
+                {t("app.shared.artist_other")}
+              </BadgeText>
+            </Badge>
+          </FadeOutScaleDown>
+          <FadeOutScaleDown onPress={() => handleFilterPress("playlists")}>
+            <Badge
+              className={cn("rounded-full bg-gray-800 px-4 py-1 mr-2", {
+                "bg-emerald-500": filter.includes("playlists"),
+              })}
+            >
+              <BadgeText className="normal-case text-md text-white">
+                {t("app.shared.playlist_other")}
+              </BadgeText>
+            </Badge>
+          </FadeOutScaleDown>
+          <FadeOutScaleDown onPress={() => handleFilterPress("radioStations")}>
+            <Badge
+              className={cn("rounded-full bg-gray-800 px-4 py-1 mr-2", {
+                "bg-emerald-500": filter.includes("radioStations"),
+              })}
+            >
+              <BadgeText className="normal-case text-md text-white">
+                {t("app.shared.radioStation_other")}
+              </BadgeText>
+            </Badge>
+          </FadeOutScaleDown>
+          <FadeOutScaleDown onPress={() => handleFilterPress("folders")}>
+            <Badge
+              className={cn("rounded-full bg-gray-800 px-4 py-1", {
+                "bg-emerald-500": filter.includes("folders"),
+              })}
+            >
+              <BadgeText className="normal-case text-md text-white">
+                {t("app.shared.folder_other")}
+              </BadgeText>
+            </Badge>
+          </FadeOutScaleDown>
+        </ScrollView>
+        <LinearGradient
+          colors={["#000000", "transparent"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 24,
+          }}
+        />
+        <LinearGradient
+          colors={["transparent", "#000000"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 24,
+          }}
+        />
+      </Box>
+      {(playlistsError || starredError || musicFoldersError) && (
+        <ErrorDisplay
+          error={(playlistsError || starredError || musicFoldersError) as Error}
+        />
+      )}
+      {!(playlistsError || starredError || musicFoldersError) && (
+        <FlashList
+          data={
+            isLoadingPlaylists || isLoadingStarred || isLoadingMusicFolders
+              ? (loadingData(12) as Array<
+                  FuseResult<
+                    AlbumID3 &
+                      Playlist &
+                      ArtistID3 &
+                      Favorites &
+                      LibraryFolder &
+                      LibraryRadioStation
+                  >
+                >)
+              : data
+          }
+          keyExtractor={(item, index) =>
+            isLoadingPlaylists || isLoadingStarred || isLoadingMusicFolders
+              ? `skeleton-${index}`
+              : item.item.id
+          }
+          renderItem={({
+            item,
+          }: {
+            item: FuseResult<
+              AlbumID3 &
+                Playlist &
+                ArtistID3 &
+                Favorites &
+                LibraryFolder &
+                LibraryRadioStation
+            >;
+          }) =>
+            isLoadingPlaylists || isLoadingStarred || isLoadingMusicFolders ? (
+              <Box className="px-6">
+                <LibraryListItemSkeleton layout="list" />
+              </Box>
+            ) : (
+              <Box className="px-6">
+                <LibraryListItem item={item.item} layout="list" />
+              </Box>
+            )
+          }
+          ListEmptyComponent={() => {
+            if (
+              isLoadingPlaylists ||
+              isLoadingStarred ||
+              isLoadingMusicFolders
+            ) {
+              return null;
+            }
+            if (!debouncedQuery) return null;
+            return <EmptyDisplay />;
+          }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: screenBottomPadding,
+          }}
+        />
+      )}
+    </Box>
+  );
+}

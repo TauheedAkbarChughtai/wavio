@@ -1,0 +1,88 @@
+appId: com.jmercier.wavio
+name: search
+# Critical path #3 — Search (one session).
+# Walks the whole search surface end-to-end: the genre grid on the landing
+# screen, a live query through to the results screen + its filter chips, and the
+# recent-searches store round-trip (the query is remembered, then "Clear all"
+# wipes it). Folds three previously separate journeys into one cold start.
+tags:
+  - search
+  - smoke-test
+---
+- runFlow: ../../subflows/login-demo.yaml
+
+- tapOn: "Search"
+- assertVisible: "Explore genres"
+
+# --- Genre grid: tap the first tile -> genre detail -> back -----------------
+# Genre names are server-specific, so target the first tile by testID and prove
+# we left the landing screen.
+- extendedWaitUntil:
+    visible:
+      id: "genre-item"
+    timeout: 8000
+- tapOn:
+    id: "genre-item"
+    index: 0
+- extendedWaitUntil:
+    notVisible: "Explore genres"
+    timeout: 5000
+- back
+- assertVisible: "Explore genres"
+
+# --- Query -> results -> filter --------------------------------------------
+- tapOn: "What do you want to listen to ?"
+- inputText: "love"
+- pressKey: "Enter"
+- extendedWaitUntil:
+    visible: "Albums"
+    timeout: 8000
+- assertVisible: "Artists"
+- assertVisible: "Songs"
+- tapOn: "Songs"
+- assertVisible: "Songs"
+
+# --- Open a result -> detail screen -> back ---------------------------------
+# Completes the discovery path: tap the first result row and land on a detail
+# screen. Result rows render an alt="Recent search cover" image; a song result
+# routes to its album (SearchResultListItem), so assert the album detail mounted
+# via its "…" menu testID, then return to the results screen (the filter chips
+# are unique to it). Guarded on a result being present so an empty result set is
+# a no-op rather than a failure.
+- runFlow:
+    when:
+      visible:
+        text: "Recent search cover"
+    commands:
+      - tapOn:
+          text: "Recent search cover"
+          index: 0
+      - extendedWaitUntil:
+          visible:
+            id: "album-menu-button"
+          timeout: 8000
+      - back
+      - extendedWaitUntil:
+          visible: "Songs"
+          timeout: 5000
+
+# --- Recent searches: query was remembered, then clear it -------------------
+# Submitting recorded "love" in the recent-searches store and pushed a separate
+# results screen. Back returns to the recent-searches screen, still holding the
+# query (so it shows live results); the history list only renders when the field
+# is empty, so clear it via the "X" (testID) to surface the recorded search.
+- back
+- tapOn:
+    id: "search-clear-button"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Recent searches"
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "love"
+    timeout: 5000
+- assertVisible: "Clear all"
+- tapOn: "Clear all"
+- extendedWaitUntil:
+    notVisible: "love"
+    timeout: 5000

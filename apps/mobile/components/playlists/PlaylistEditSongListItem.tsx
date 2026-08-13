@@ -1,0 +1,76 @@
+import AudioLines from "lucide-react-native/dist/esm/icons/audio-lines.mjs";
+import CircleMinus from "lucide-react-native/dist/esm/icons/circle-minus.mjs";
+import Menu from "lucide-react-native/dist/esm/icons/menu.mjs";
+import { Uniwind } from "uniwind";
+import FadeOutScaleDown from "@/components/FadeOutScaleDown";
+import { Box } from "@/components/ui/box";
+import { Heading } from "@/components/ui/heading";
+import { HStack } from "@/components/ui/hstack";
+import { Image } from "@/components/ui/image";
+import { Pressable } from "@/components/ui/pressable";
+import { Text } from "@/components/ui/text";
+import { VStack } from "@/components/ui/vstack";
+import type { Child } from "@/services/openSubsonic/types";
+import { artworkUrl } from "@/utils/artwork";
+import { cn } from "@/utils/tailwind";
+
+interface PlaylistEditSongListItemProps {
+  item: Child;
+  beginDrag: () => void;
+  isActive: boolean;
+  handleRemoveFromPlaylistPress: () => void;
+}
+
+export default function PlaylistEditSongListItem({
+  item,
+  beginDrag,
+  isActive,
+  handleRemoveFromPlaylistPress,
+}: PlaylistEditSongListItemProps) {
+  const [gray400, white] = Uniwind.getCSSVariable([
+    "--color-gray-400",
+    "--color-white",
+  ]) as string[];
+  return (
+    <Pressable
+      onLongPress={beginDrag}
+      className={cn("flex-row items-center justify-between px-6 py-4", {
+        "bg-primary-600": isActive,
+      })}
+    >
+      <HStack className="items-center flex-1">
+        <FadeOutScaleDown
+          className="mr-4"
+          onPress={handleRemoveFromPlaylistPress}
+        >
+          <CircleMinus size={24} color={gray400} />
+        </FadeOutScaleDown>
+        {item.coverArt ? (
+          <Image
+            source={{
+              uri: artworkUrl(item.coverArt),
+            }}
+            className="w-16 h-16 rounded-md aspect-square"
+            alt="Track cover"
+          />
+        ) : (
+          <Box className="w-16 h-16 aspect-square rounded-md bg-primary-600 items-center justify-center">
+            <AudioLines size={24} color={white} />
+          </Box>
+        )}
+        <VStack className="ml-4 flex-1">
+          <Heading
+            className="text-white text-lg font-normal mr-4"
+            numberOfLines={1}
+          >
+            {item.title}
+          </Heading>
+          <Text className="text-primary-100 text-sm">{item.artist}</Text>
+        </VStack>
+      </HStack>
+      <FadeOutScaleDown onPress={beginDrag}>
+        <Menu size={24} color={gray400} />
+      </FadeOutScaleDown>
+    </Pressable>
+  );
+}

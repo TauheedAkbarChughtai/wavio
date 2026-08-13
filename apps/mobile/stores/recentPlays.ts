@@ -1,0 +1,118 @@
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { createDynamicScopedStorage } from "@/config/storage";
+import { currentAuthScope } from "@/stores/auth";
+import createSelectors from "@/utils/createSelectors";
+
+export type RecentPlay = {
+  id: string;
+  title: string;
+  type: "album" | "artist" | "playlist" | "favorites" | "internetRadioStation";
+  coverArt?: string;
+  homePageUrl?: string;
+  streamUrl?: string;
+  // Extra internet-radio metadata so the home shortcut can reopen the detail
+  // screen with everything it needs (esp. Radio-Browser stations).
+  source?: "server" | "radioBrowser";
+  tags?: string;
+  country?: string;
+  countrySubdivision?: string;
+  languages?: string;
+};
+
+let ensuredRecentPlayOnHydration: RecentPlay | null = {
+  id: "favorites",
+  title: "Favorites",
+  type: "favorites",
+};
+
+export const setEnsuredRecentPlayOnHydration = (
+  recentPlay: RecentPlay | null,
+) => {
+  ensuredRecentPlayOnHydration = recentPlay;
+};
+
+interface RecentPlaysStore {
+  recentPlays: RecentPlay[];
+  addRecentPlay: (recentPlay: RecentPlay) => void;
+  insertRecentPlayAtTop: (recentPlay: RecentPlay) => void;
+  clearRecentPlays: () => void;
+  __reset: () => void;
+}
+
+let storeRef: { getState: () => RecentPlaysStore } | null = null;
+
+const useRecentPlaysBase = create<RecentPlaysStore>()(
+  persist(
+    (set, _get, store) => {
+      storeRef = store as unknown as { getState: () => RecentPlaysStore };
+      const pinFavoritesAndCap = (items: RecentPlay[]): RecentPlay[] => {
+        const capped = items.slice(0, 8);
+        const favIndex = capped.findIndex((p) => p.id === "favorites");
+        if (favIndex > 0) {
+          const [fav] = capped.splice(favIndex, 1);
+          capped.unshift(fav);
+        }
+        return capped;
+      };
+      return {
+        recentPlays: [],
+        addRecentPlay: (recentPlay: RecentPlay) => {
+          set((state) => {
+            if (state.recentPlays.some((play) => play.id === recentPlay.id)) {
+              return { recentPlays: pinFavoritesAndCap(state.recentPlays) };
+            }
+            const newRecentPlays = [recentPlay, ...state.recentPlays];
+            return { recentPlays: pinFavoritesAndCap(newRecentPlays) };
+          });
+        },
+        insertRecentPlayAtTop: (recentPlay: RecentPlay) => {
+          set((state) => {
+            const withoutDuplicate = state.recentPlays.filter(
+              (play) => play.id !== recentPlay.id,
+            );
+            const newRecentPlays = [recentPlay, ...withoutDuplicate];
+            return { recentPlays: pinFavoritesAndCap(newRecentPlays) };
+          });
+        },
+        clearRecentPlays: () => {
+          set((state) => {
+            return {
+              recentPlays: state.recentPlays.filter(
+                (play) => play.id === "favorites",
+              ),
+            };
+          });
+        },
+        __reset: () => {
+          set({ recentPlays: [] });
+        },
+      };
+    },
+    {
+      name: "recentPlays",
+      storage: createJSONStorage(() =>
+        createDynamicScopedStorage(currentAuthScope),
+      ),
+      onRehydrateStorage: () => {
+        return () => {
+          if (!ensuredRecentPlayOnHydration) return;
+          const state = (
+            storeRef as { getState: () => RecentPlaysStore }
+          ).getState();
+          const exists = state.recentPlays.some(
+            (play: RecentPlay) => play.id === ensuredRecentPlayOnHydration?.id,
+          );
+          if (!exists) {
+            state.insertRecentPlayAtTop(ensuredRecentPlayOnHydration);
+          }
+        };
+      },
+      skipHydration: true,
+    },
+  ),
+);
+
+const useRecentPlays = createSelectors(useRecentPlaysBase);
+
+export default useRecentPlays;

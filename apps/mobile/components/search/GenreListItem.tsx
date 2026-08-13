@@ -1,0 +1,46 @@
+import { useTranslation } from "react-i18next";
+import FadeOutScaleDown from "@/components/FadeOutScaleDown";
+import { Heading } from "@/components/ui/heading";
+import { HStack } from "@/components/ui/hstack";
+import { Text } from "@/components/ui/text";
+import { VStack } from "@/components/ui/vstack";
+import type { Genre } from "@/services/openSubsonic/types";
+import useAuth from "@/stores/auth";
+import { cn } from "@/utils/tailwind";
+
+interface GenreListItemProps {
+  genre: Genre;
+}
+
+export default function GenreListItem({ genre }: GenreListItemProps) {
+  const { t } = useTranslation();
+  const serverType = useAuth((s) => s.serverType);
+  const showCounts =
+    serverType !== "jellyfin" &&
+    genre.songCount != null &&
+    genre.albumCount != null;
+  return (
+    <FadeOutScaleDown testID="genre-item" href={`/genres/${genre.value}`}>
+      <VStack className="bg-primary-600 p-4 w-full h-full rounded-md">
+        <Heading
+          size="md"
+          numberOfLines={2}
+          className={cn("text-white", showCounts && "h-14 mb-2")}
+        >
+          {genre.value}
+        </Heading>
+        {showCounts && (
+          <HStack>
+            <Text className="text-primary-100 text-sm">
+              {t("app.shared.songCount", { count: genre.songCount })}
+            </Text>
+            <Text className="text-primary-100 text-sm"> ⦁ </Text>
+            <Text className="text-primary-100 text-sm">
+              {t("app.shared.albumCount", { count: genre.albumCount })}
+            </Text>
+          </HStack>
+        )}
+      </VStack>
+    </FadeOutScaleDown>
+  );
+}
