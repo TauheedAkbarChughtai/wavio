@@ -1,282 +1,280 @@
-import { persistQueryClientRestore } from "@tanstack/react-query-persist-client";
-import { Redirect, Stack } from "expo-router";
-import { type ReactNode, useCallback, useEffect } from "react";
+import { DarkTheme, ThemeProvider } from "expo-router/react-navigation";
+import "@/global.css";
+import "@/config/http";
 import {
-  AppState,
-  type AppStateStatus,
-  useWindowDimensions,
-} from "react-native";
-import { Drawer } from "react-native-drawer-layout";
-import { useCSSVariable } from "uniwind";
+  Inter_300Light,
+  Inter_400Regular,
+  Inter_700Bold,
+  useFonts,
+} from "@expo-google-fonts/inter";
+import { NavigationBar } from "expo-navigation-bar";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+
+import { useEffect, useRef } from "react";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
-import DrawerMenu from "@/components/DrawerMenu";
-import FloatingPlayer from "@/components/FloatingPlayer";
-import LocalLibraryIndexing from "@/components/local/LocalLibraryIndexing";
-import OfflineMutationsSync from "@/components/OfflineMutationsSync";
-import OfflineStarredAutoSync from "@/components/OfflineStarredAutoSync";
-import JukeboxResumeDialog from "@/components/player/JukeboxResumeDialog";
-import JukeboxSheet from "@/components/player/JukeboxSheet";
-import ServerExtensionsSync from "@/components/ServerExtensionsSync";
+import CarAutoSync from "@/components/CarAutoSync";
+import { PodcastEpisodeActionsProvider } from "@/components/podcasts/PodcastEpisodeActionsProvider";
+import { TrackActionsProvider } from "@/components/tracks/TrackActionsProvider";
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import "react-native-reanimated";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { init as sentryInit, wrap as sentryWrap } from "@sentry/react-native";
 import {
-  persistOptions,
-  queryClient,
-  setCacheRestoring,
-} from "@/config/queryClient";
-import useMusicFolderSelection from "@/hooks/useMusicFolderSelection";
-import { initJukeboxOnLaunch } from "@/services/jukebox";
-import { probeServer, resetServerReachable } from "@/services/network";
+  focusManager,
+  onlineManager,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import { persistQueryClientSubscribe } from "@tanstack/react-query-persist-client";
+import * as Application from "expo-application";
+import { getLocales } from "expo-localization";
+import { AppState, type AppStateStatus, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import {
-  initOfflineMutationReplay,
-  resetOfflineMutationReplay,
-  stopOfflineMutationReplay,
-} from "@/services/offlineMutations/replay";
-import { resetPlayerForScopeChange } from "@/services/player";
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
+import i18n, {
+  applyZodLocale,
+  SupportedLanguages,
+  type TSupportedLanguages,
+} from "@/config/i18n";
+import { persistOptions, queryClient } from "@/config/queryClient";
+import { scrubBreadcrumb, scrubEvent } from "@/services/errorReporting";
 import {
-  flushPlayQueue,
-  initPlayQueueSync,
-  stopPlayQueueSync,
-} from "@/services/playQueueSync";
-import { loadResumePositions } from "@/services/resumePositions";
-import { rewriteQueueRoutes } from "@/services/routeSwap";
-import useActivity from "@/stores/activity";
+  getIsEffectivelyOnline,
+  initConnectionType,
+  probeServerPreferringPrimary,
+  subscribeEffectiveOnline,
+} from "@/services/network";
+import { initOrientation } from "@/services/orientation";
+import { configurePlayback } from "@/services/player";
+import { initSentryScope } from "@/services/sentryScope";
+import { initSslTrust, refreshSslProxyOnForeground } from "@/services/sslTrust";
+import { runStorageScopeMigration } from "@/services/storageScopeMigration";
+import { initWidget } from "@/services/widget";
 import useApp from "@/stores/app";
-import useAuth, { currentAuthScope, useAuthBase } from "@/stores/auth";
-import useBookmarks from "@/stores/bookmarks";
-import useCapabilityOverrides from "@/stores/capabilityOverrides";
-import useLocalLibrary from "@/stores/localLibrary";
-import useOffline from "@/stores/offline";
-import useOfflineMutations from "@/stores/offlineMutations";
-import usePlayHistory from "@/stores/playHistory";
-import usePlaylists from "@/stores/playlists";
-import useQueue from "@/stores/queue";
-import useRecentPlays from "@/stores/recentPlays";
-import useRecentSearches from "@/stores/recentSearches";
-import { useServerExtensionsBase } from "@/stores/serverExtensions";
-import { logError } from "@/utils/log";
+import { useAuthBase } from "@/stores/auth";
 
-// Module-level so it survives AppLayout unmount/remount during the
-// logout → login flow used by switchToServer.
-let lastHydratedScope: string | null = null;
+sentryInit({
+  dsn: "https://fdd67c7590ff4b680308d9dae6640460@o4511401546285056.ingest.de.sentry.io/4511401549758544",
 
-// Isolates the drawer's open-state subscription so toggling it re-renders only
-// this wrapper — not AppLayout, whose re-render would recreate the whole Stack
-// navigator config and flicker the screen. `children` (the Stack subtree) stays
-// referentially stable, so it's skipped on open/close.
-function AppDrawer({ children }: { children: ReactNode }) {
-  const showDrawer = useApp((s) => s.showDrawer);
-  const setShowDrawer = useApp((s) => s.setShowDrawer);
-  const isWideLayout = useApp((s) => s.isWideLayout);
-  const { width } = useWindowDimensions();
-  const primary600 = useCSSVariable("--color-primary-600") as
-    | string
-    | undefined;
-  const openDrawer = useCallback(() => setShowDrawer(true), [setShowDrawer]);
-  const closeDrawer = useCallback(() => setShowDrawer(false), [setShowDrawer]);
-  const renderDrawerContent = useCallback(
-    () => <DrawerMenu onClose={closeDrawer} />,
-    [closeDrawer],
-  );
-  return (
-    <Drawer
-      open={showDrawer}
-      onOpen={openDrawer}
-      onClose={closeDrawer}
-      drawerPosition="left"
-      drawerType="front"
-      drawerStyle={{
-        backgroundColor: primary600,
-        // The lg drawer was 3/4 of the screen — far too wide in landscape;
-        // roughly halve it there.
-        width: isWideLayout ? width * 0.4 : "75%",
-      }}
-      renderDrawerContent={renderDrawerContent}
-    >
-      {children}
-    </Drawer>
-  );
+  // Report from every non-dev build — preview and production — so issues are
+  // caught during QA, not only after release. Tagged by `environment` so the
+  // two can be filtered apart in Sentry.
+  enabled: !__DEV__ && process.env.EXPO_PUBLIC_ENV !== "development",
+  environment: process.env.EXPO_PUBLIC_ENV ?? "development",
+
+  // Tie events to the shipped binary so uploaded source maps / dSYMs resolve
+  // stack traces back to readable source.
+  release: `wavio@${Application.nativeApplicationVersion ?? "0.0.0"}`,
+  dist: Application.nativeBuildVersion ?? undefined,
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable structured logs (Sentry.logger.*) for diagnostic, non-Issue state.
+  enableLogs: true,
+
+  // Strip credentials Subsonic/Jellyfin/Taddy carry in request URLs and auth
+  // headers before any breadcrumb or event leaves the device (sendDefaultPii
+  // is on, so without this the password in the Subsonic query string leaks).
+  beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
+  beforeSend: (event) => scrubEvent(event),
+
+  // Backstop to the reportError classifier: never raise an Issue for transient
+  // connectivity failures.
+  ignoreErrors: [
+    "Network Error",
+    "timeout exceeded",
+    "Request aborted",
+    "AbortError",
+    /ECONNABORTED/,
+    /ERR_NETWORK/,
+  ],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
+
+// Move any legacy URL-keyed storage buckets onto the id-based scope. Runs at
+// module scope, synchronously, because it has to beat the (app) layout's
+// hydration effect — hydrating a scoped store before its keys are renamed would
+// read an empty bucket and then persist that emptiness over the real data.
+runStorageScopeMigration();
+
+function onAppStateChange(status: AppStateStatus) {
+  if (Platform.OS !== "web") {
+    focusManager.setFocused(status === "active");
+  }
+  if (status === "active") {
+    // Re-check server reachability on foreground: the network (and thus the
+    // server's reachability) may have changed while backgrounded. Prefers the
+    // primary route (throttled): foregrounding is one of the few signals that
+    // the user might be back on their LAN.
+    probeServerPreferringPrimary();
+    // The iOS loopback proxy may have been torn down while backgrounded; make
+    // sure the cached proxy info is current before streaming resumes.
+    void refreshSslProxyOnForeground();
+  }
 }
 
-export default function AppLayout() {
-  const isAuthenticated = useAuth((store) => store.isAuthenticated);
-  const serverType = useAuthBase((s) => s.serverType);
-  const localLibReady = useLocalLibrary((s) => s.ready);
-  const lastScanAt = useLocalLibrary((s) => s.lastScanAt);
-  useMusicFolderSelection();
+export default sentryWrap(function RootLayout() {
+  const locale = useApp((store) => store.locale);
+  const setLocale = useApp((store) => store.setLocale);
+  // Inter has no CJK glyphs, so forcing it under zh-CN renders Latin in Inter and
+  // Chinese in Android's system Noto CJK — a mismatched, uneven mix. Skip loading
+  // Inter for zh-CN so the whole UI falls back to the OS system font (Roboto +
+  // Noto CJK on Android), which renders Latin and CJK consistently and ships zero
+  // extra bytes. font-weight in global.css preserves the type hierarchy.
+  const [loaded] = useFonts(
+    locale === "zh-CN"
+      ? {}
+      : {
+          Inter_400Regular,
+          Inter_300Light,
+          Inter_700Bold,
+        },
+  );
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    const scope = currentAuthScope();
-    if (lastHydratedScope === scope) return;
-    // Only reset when switching to a different (server, user) scope. On the
-    // initial hydration after app start the in-memory state is already the
-    // initial defaults, and a reset here would race the async rehydrate and
-    // wipe data that's about to be restored from storage.
-    const isScopeChange = lastHydratedScope !== null;
-    lastHydratedScope = scope;
-    if (__DEV__) console.log("[app] Hydrating scoped stores for scope", scope);
-    if (isScopeChange) {
-      stopPlayQueueSync();
-      useRecentPlays.getState().__reset();
-      useRecentSearches.getState().__reset();
-      useActivity.getState().__reset();
-      usePlayHistory.getState().__reset();
-      useQueue.getState().__reset();
-      // Mirror cold-start hydration on the player so the new scope's restored
-      // queue loads silently instead of auto-playing. Must run after the queue
-      // __reset above (so the store reports not-hydrated) and before the
-      // rehydrate below.
-      resetPlayerForScopeChange();
-      useOffline.getState().__reset();
-      resetOfflineMutationReplay();
-      useOfflineMutations.getState().__reset();
-      useLocalLibrary.getState().__reset();
-      useBookmarks.getState().__reset();
-      useCapabilityOverrides.getState().__reset();
-      useServerExtensionsBase.getState().reset();
-      // Clear the previous server's reachability state so the new server starts
-      // optimistic; the probe below confirms it.
-      resetServerReachable();
+    if (loaded) {
+      SplashScreen.hideAsync();
     }
+  }, [loaded]);
 
-    // Restore the persisted React Query cache for this scope. On a server
-    // switch, clear the in-memory cache first so the previous server's data is
-    // never visible, then restore the new scope's blob (the persister's storage
-    // adapter is scope-dynamic, so this reads `${scope}:wavio-rq-cache`).
-    setCacheRestoring(true);
-    void (async () => {
-      try {
-        if (isScopeChange) {
-          await queryClient.cancelQueries();
-          queryClient.clear();
-        }
-        await persistQueryClientRestore({ queryClient, ...persistOptions });
-      } catch (error) {
-        logError("[app] Failed to restore persisted query cache", error);
-      } finally {
-        setCacheRestoring(false);
+  useEffect(() => {
+    configureReanimatedLogger({
+      level: ReanimatedLogLevel.warn,
+      strict: false, // Reanimated runs in strict mode by default
+    });
+    // Install the custom SSL trust manager before any network request so
+    // already-trusted self-signed servers connect on cold start (Android is
+    // global; iOS also (re)starts the loopback proxy for trusted upstreams).
+    void initSslTrust();
+    // Drive React Query's online state off effective connectivity (device
+    // online AND server reachable) so it pauses refetches and serves cache when
+    // the server is unreachable, instead of hammering it with failing requests.
+    onlineManager.setEventListener((setOnline) => {
+      setOnline(getIsEffectivelyOnline());
+      return subscribeEffectiveOnline(() =>
+        setOnline(getIsEffectivelyOnline()),
+      );
+    });
+    // Continuously persist the query cache to the active (server, user) scope.
+    // The initial restore happens in app/(app)/_layout.tsx's scope-change
+    // effect, which can also re-restore when switching servers in-app.
+    const unsubscribePersist = persistQueryClientSubscribe({
+      queryClient,
+      ...persistOptions,
+    });
+    const unsubscribeConnectionType = initConnectionType();
+    const unsubscribeSentryScope = initSentryScope();
+    const unsubscribeOrientation = initOrientation();
+    const idle =
+      typeof requestIdleCallback === "function"
+        ? requestIdleCallback(() => {
+            configurePlayback();
+            initWidget();
+          })
+        : (setTimeout(() => {
+            configurePlayback();
+            initWidget();
+          }, 0) as unknown as number);
+    const subscription = AppState.addEventListener("change", onAppStateChange);
+    return () => {
+      if (typeof cancelIdleCallback === "function") {
+        cancelIdleCallback(idle);
+      } else {
+        clearTimeout(idle);
       }
-    })();
-    useRecentPlays.persist.rehydrate();
-    useRecentSearches.persist.rehydrate();
-    usePlaylists.persist.rehydrate();
-    useActivity.persist.rehydrate();
-    usePlayHistory.persist.rehydrate();
-    useQueue.persist.rehydrate();
-    // The queue bakes absolute URLs, and the session may have cold-started on a
-    // different route than the one it was saved under (the active route is
-    // persisted). Rehydration is synchronous, so this sees the restored queue.
-    rewriteQueueRoutes();
-    useOffline.persist.rehydrate();
-    useBookmarks.persist.rehydrate();
-    useCapabilityOverrides.persist.rehydrate();
-    useOfflineMutations.persist.onFinishHydration(() => {
-      initOfflineMutationReplay();
-    });
-    useOfflineMutations.persist.rehydrate();
-    // Flag the local-library store ready once its saved scan summary is back, so
-    // the first-login indexing gate below can trust `lastScanAt`.
-    void Promise.resolve(useLocalLibrary.persist.rehydrate()).then(() => {
-      useLocalLibrary.getState().setReady();
-    });
-
-    // Once the local queue is in place, start server play-queue sync (which may
-    // restore the server's queue when prioritised) and prime resume positions.
-    useQueue.persist.onFinishHydration(() => {
-      void initPlayQueueSync();
-      void loadResumePositions();
-      // If a jukebox session was playing when the app was last closed, re-check
-      // the server and prompt the user to resume control.
-      void initJukeboxOnLaunch();
-    });
-
-    // Confirm the active server is reachable (covers cold start and server
-    // switch); NetInfo's optimistic default would otherwise leave us "online".
-    void probeServer();
-  }, [isAuthenticated]);
-
-  // Persist the play queue to the server promptly when leaving the app.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const onChange = (status: AppStateStatus) => {
-      if (status === "background" || status === "inactive") flushPlayQueue();
+      subscription.remove();
+      unsubscribeConnectionType();
+      unsubscribeSentryScope();
+      unsubscribeOrientation();
+      unsubscribePersist();
     };
-    const sub = AppState.addEventListener("change", onChange);
-    return () => sub.remove();
-  }, [isAuthenticated]);
+  }, []);
 
-  // Tear down sync subscriptions on sign-out so a fresh login re-initialises.
   useEffect(() => {
-    if (isAuthenticated) return;
-    stopPlayQueueSync();
-    stopOfflineMutationReplay();
-  }, [isAuthenticated]);
+    if (locale) {
+      i18n.changeLanguage(locale);
+      applyZodLocale(locale);
+      return;
+    }
+    const userLocales = getLocales();
+    const matching = userLocales.find(
+      (userLocale) =>
+        userLocale.languageCode &&
+        (SupportedLanguages as string[]).includes(userLocale.languageCode),
+    );
+    // SupportedLanguages only holds the region-qualified "zh-CN", so a device
+    // reporting a bare "zh" (or "zh-Hans", "zh-TW", …) never matches above and
+    // would wrongly fall back to English. Map any Chinese base code to zh-CN.
+    const zhMatch = userLocales.find((userLocale) =>
+      userLocale.languageCode?.toLowerCase().startsWith("zh"),
+    );
+    const next = (matching?.languageCode ??
+      (zhMatch ? "zh-CN" : "en")) as TSupportedLanguages;
+    setLocale(next);
+    i18n.changeLanguage(next);
+    applyZodLocale(next);
+  }, [locale, setLocale]);
 
-  if (!isAuthenticated) {
-    if (__DEV__)
-      console.log("[app] User is not authenticated, redirecting to login");
-    return <Redirect href="/(auth)/login" />;
+  // Local-library display labels (e.g. "Unknown album") are localized at map
+  // time and cached by React Query, so a runtime locale switch wouldn't update
+  // them until the cache goes stale. Re-run the local queries on an actual
+  // change so the new locale shows immediately. Skips the initial mount and only
+  // touches local mode (remote names come from the server, not from i18n).
+  const prevLocale = useRef(locale);
+  useEffect(() => {
+    if (prevLocale.current === locale) return;
+    prevLocale.current = locale;
+    if (useAuthBase.getState().serverType === "local") {
+      queryClient.invalidateQueries();
+    }
+  }, [locale]);
+
+  if (!loaded) {
+    return null;
   }
 
-  // First login into a local library: hold on the indexing screen (spinner +
-  // live scan steps) until the on-device index is built, then fall through to
-  // render the app — which lands on Home. `!localLibReady` covers the brief
-  // window before the saved scan summary has rehydrated, so Home never flashes.
-  if (serverType === "local" && (!localLibReady || lastScanAt === undefined)) {
-    return <LocalLibraryIndexing />;
-  }
-
-  if (__DEV__)
-    console.log("[app] User is authenticated, rendering (app) layout");
   return (
-    <>
-      <AppDrawer>
-        <AppErrorBoundary variant="inline">
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="playlists/new" />
-            <Stack.Screen name="playlists/new-smart" />
-            <Stack.Screen name="playlists/[id]/edit-rules" />
-            <Stack.Screen name="internet-radio-stations/new" />
-            <Stack.Screen name="podcast-channels/new" />
-            <Stack.Screen
-              name="player"
-              options={{
-                gestureEnabled: true,
-                fullScreenGestureEnabled: true,
-                gestureDirection: "vertical",
-                animationDuration: 300,
-                animation: "fade_from_bottom",
-                presentation: "formSheet",
-                sheetAllowedDetents: [1.0],
-                // Android: extend the sheet behind the top inset so the [1.0]
-                // detent truly covers the screen (no underlying view peeking at
-                // the top) and the screen's own paddingTop: insets.top isn't
-                // stacked on top of a second inset gap.
-                sheetShouldOverflowTopInset: true,
-              }}
-            />
-            <Stack.Screen
-              name="lyrics"
-              options={{
-                gestureEnabled: true,
-                fullScreenGestureEnabled: true,
-                gestureDirection: "vertical",
-                animationDuration: 300,
-                animation: "fade_from_bottom",
-                presentation: "formSheet",
-                sheetAllowedDetents: [1.0],
-                sheetShouldOverflowTopInset: true,
-              }}
-            />
-          </Stack>
-        </AppErrorBoundary>
-        <FloatingPlayer />
-      </AppDrawer>
-      <OfflineMutationsSync />
-      <OfflineStarredAutoSync />
-      <ServerExtensionsSync />
-      <JukeboxResumeDialog />
-      <JukeboxSheet />
-    </>
+    <QueryClientProvider client={queryClient}>
+      <KeyboardProvider>
+        <GluestackUIProvider mode="dark">
+          <ThemeProvider value={DarkTheme}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <StatusBar style="light" />
+              <NavigationBar style="light" />
+              <BottomSheetModalProvider>
+                <TrackActionsProvider>
+                  <PodcastEpisodeActionsProvider>
+                    <AppErrorBoundary variant="fullscreen">
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                        }}
+                      >
+                        <Stack.Screen name="(app)" />
+                        <Stack.Screen name="(auth)" />
+                        <Stack.Screen name="+not-found" />
+                      </Stack>
+                    </AppErrorBoundary>
+                    <CarAutoSync />
+                  </PodcastEpisodeActionsProvider>
+                </TrackActionsProvider>
+              </BottomSheetModalProvider>
+            </GestureHandlerRootView>
+          </ThemeProvider>
+        </GluestackUIProvider>
+      </KeyboardProvider>
+    </QueryClientProvider>
   );
-}
+});
