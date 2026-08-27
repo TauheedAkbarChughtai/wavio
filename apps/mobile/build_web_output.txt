@@ -9,7 +9,7 @@ Reason: The target for "." defined in "exports" is "./../dist/esm/browser.js", h
 Reason: The target for "." defined in "exports" is "./../dist/esm/browser.js", however this value is an invalid subpath or subpath pattern because it includes "..". Falling back to file-based resolution.
  WARN  Attempted to import the module "/app/node_modules/expo-asset/build/resolveAssetSource" which is not listed in the "exports" of "/app/node_modules/expo-asset" under the requested subpath "./build/resolveAssetSource". Falling back to file-based resolution. Consider updating the call site or asking the package maintainer(s) to expose this API.
  WARN  Attempted to import the module "/app/node_modules/expo-asset/build/resolveAssetSource" which is not listed in the "exports" of "/app/node_modules/expo-asset" under the requested subpath "./build/resolveAssetSource". Falling back to file-based resolution. Consider updating the call site or asking the package maintainer(s) to expose this API.
-Web Bundling failed 15776ms apps/mobile/index.js (6485 modules)
+Web Bundling failed 12038ms apps/mobile/index.js (6500 modules)
 Error: Unable to resolve module ./wa-sqlite/wa-sqlite.wasm from /app/node_modules/expo-sqlite/web/worker.ts:
 
 None of these files exist:
@@ -34,11 +34,11 @@ Import stack:
  node_modules/expo-sqlite/build/ExpoSQLite.web.js
  | import "../web/SQLiteModule"
 
- node_modules/expo-sqlite/build/hooks.js
+ node_modules/expo-sqlite/build/SQLiteDatabase.js
  | import "./ExpoSQLite"
 
  node_modules/expo-sqlite/build/index.js
- | import "./hooks"
+ | import "./SQLiteDatabase"
 
  apps/mobile/services/local/db.ts
  | import "expo-sqlite"
@@ -52,10 +52,10 @@ Import stack:
  apps/mobile/services/backend/browsing.ts
  | import "@/services/local/browsing"
 
- apps/mobile/hooks/backend/useBrowsing.ts
+ apps/mobile/components/artists/ArtistDetail.tsx
  | import "@/services/backend/browsing"
 
- apps/mobile/app/(app)/(tabs)/(home)/index.tsx
- | import "@/hooks/backend/useBrowsing"
+ apps/mobile/app/(app)/(tabs)/(library)/artists/[id].tsx
+ | import "@/components/artists/ArtistDetail"
 
  apps/mobile/app (require.context)
