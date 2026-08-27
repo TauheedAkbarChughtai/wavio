@@ -19,6 +19,8 @@ import AnimatedHeart from "@/components/AnimatedHeart";
 import DownloadedBadge from "@/components/DownloadedBadge";
 import FadeOutScaleDown from "@/components/FadeOutScaleDown";
 import ImageWithFallback from "@/components/ImageWithFallback";
+import { useDownloadModal } from "@/components/search/DownloadFormatModal";
+import CloudDownload from "lucide-react-native/dist/esm/icons/cloud-download.mjs";
 import { Box } from "@/components/ui/box";
 import { Heading } from "@/components/ui/heading";
 import { HStack } from "@/components/ui/hstack";
@@ -116,6 +118,7 @@ function TrackListItem({
   disableFirstItemMargin = false,
   disableSwipe = false,
 }: TrackListItemProps) {
+  const { openDownloadModal } = useDownloadModal();
   const [white, gray300, black, emerald500] = Uniwind.getCSSVariable([
     "--color-white",
     "--color-gray-300",
@@ -221,6 +224,9 @@ function TrackListItem({
   };
 
   const handleTrackPress = () => {
+    if (track.isOwned === false) {
+      return openDownloadModal(track);
+    }
     if (onPress) {
       onPress(index, track);
     } else {
@@ -281,22 +287,30 @@ function TrackListItem({
         </VStack>
       </HStack>
       <HStack className="items-center">
-        {track.starred && (
-          <AnimatedHeart
-            filled
-            onPress={handleUnfavoritePress}
-            disabled={isUnavailableOffline}
-            className="mr-3"
-          />
+        {track.isOwned === false ? (
+          <Box className="py-2 pl-2 flex-col justify-center">
+             <CloudDownload size={24} color={white} />
+          </Box>
+        ) : (
+          <>
+            {track.starred && (
+              <AnimatedHeart
+                filled
+                onPress={handleUnfavoritePress}
+                disabled={isUnavailableOffline}
+                className="mr-3"
+              />
+            )}
+            <FadeOutScaleDown
+              testID="track-menu-button"
+              onPress={handlePresentModalPress}
+              disabled={isUnavailableOffline}
+              disabledOpacity={0.8}
+            >
+              <EllipsisVertical color={gray300} />
+            </FadeOutScaleDown>
+          </>
         )}
-        <FadeOutScaleDown
-          testID="track-menu-button"
-          onPress={handlePresentModalPress}
-          disabled={isUnavailableOffline}
-          disabledOpacity={0.8}
-        >
-          <EllipsisVertical color={gray300} />
-        </FadeOutScaleDown>
       </HStack>
     </>
   );
@@ -309,7 +323,7 @@ function TrackListItem({
       <HStack
         className={cn(
           "items-center justify-between",
-          { "opacity-80": isUnavailableOffline },
+          { "opacity-80": isUnavailableOffline, "opacity-60": track.isOwned === false },
           className,
         )}
       >

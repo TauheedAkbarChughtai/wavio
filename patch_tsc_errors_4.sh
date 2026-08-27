@@ -1,0 +1,1 @@
+sed -i '' 's/const currentTrack = usePlayerQueue.getState().current;/const currentTrack = usePlayerQueue.getState().queue[usePlayerQueue.getState().currentIndex ?? 0];/g' apps/mobile/hooks/player/useSyncPlayEngine.ts

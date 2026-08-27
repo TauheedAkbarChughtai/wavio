@@ -23,15 +23,7 @@ const MENU_ENTRIES: {
   icon: ComponentType<IconProps>;
   hideForLocal?: boolean;
 }[] = [
-  { key: "playback", icon: AudioLines },
-  { key: "library", icon: Library },
-  { key: "downloads", icon: Download, hideForLocal: true },
-  { key: "appearance", icon: Palette },
-  { key: "podcasts", icon: Podcast },
-  { key: "radio", icon: Radio },
   { key: "storage", icon: HardDrive },
-  { key: "backup", icon: Archive },
-  { key: "security", icon: ShieldCheck },
 ];
 
 export default function SettingsMenu() {

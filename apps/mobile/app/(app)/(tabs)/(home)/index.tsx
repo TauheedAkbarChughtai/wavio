@@ -9,6 +9,7 @@ import ArtistCarouselSection from "@/components/home/sections/ArtistCarouselSect
 import InternetRadioSection from "@/components/home/sections/InternetRadioSection";
 import NowPlayingSection from "@/components/home/sections/NowPlayingSection";
 import PlaylistCarouselSection from "@/components/home/sections/PlaylistCarouselSection";
+import FriendRotationSection from "@/components/home/sections/FriendRotationSection";
 import PodcastCarouselSection from "@/components/home/sections/PodcastCarouselSection";
 import RecentPlaysSection from "@/components/home/sections/RecentPlaysSection";
 import {
@@ -192,6 +193,8 @@ export default function HomeScreen() {
       const enabled =
         index <= Math.max(lastSeenIndex + SECTION_LOOKAHEAD, backfillIndex);
       switch (item.kind) {
+        case "friendRotation":
+          return <FriendRotationSection />;
         case "recentPlays":
           return <RecentPlaysSection />;
         case "nowPlaying":

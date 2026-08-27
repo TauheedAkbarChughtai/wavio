@@ -1,0 +1,61 @@
+React Compiler enabled
+Expo Autolinking module resolution enabled
+Starting Metro Bundler
+
+Static rendering is enabled. Learn more: https://docs.expo.dev/router/web/static-rendering/
+ WARN  The package /app/node_modules/node-vibrant/browser contains an invalid package.json configuration. Consider raising this issue with the package maintainer(s).
+Reason: The target for "." defined in "exports" is "./../dist/esm/browser.js", however this value is an invalid subpath or subpath pattern because it includes "..". Falling back to file-based resolution.
+ WARN  The package /app/node_modules/node-vibrant/browser contains an invalid package.json configuration. Consider raising this issue with the package maintainer(s).
+Reason: The target for "." defined in "exports" is "./../dist/esm/browser.js", however this value is an invalid subpath or subpath pattern because it includes "..". Falling back to file-based resolution.
+ WARN  Attempted to import the module "/app/node_modules/expo-asset/build/resolveAssetSource" which is not listed in the "exports" of "/app/node_modules/expo-asset" under the requested subpath "./build/resolveAssetSource". Falling back to file-based resolution. Consider updating the call site or asking the package maintainer(s) to expose this API.
+ WARN  Attempted to import the module "/app/node_modules/expo-asset/build/resolveAssetSource" which is not listed in the "exports" of "/app/node_modules/expo-asset" under the requested subpath "./build/resolveAssetSource". Falling back to file-based resolution. Consider updating the call site or asking the package maintainer(s) to expose this API.
+Web Bundling failed 15776ms apps/mobile/index.js (6485 modules)
+Error: Unable to resolve module ./wa-sqlite/wa-sqlite.wasm from /app/node_modules/expo-sqlite/web/worker.ts:
+
+None of these files exist:
+  * ../../node_modules/expo-sqlite/web/wa-sqlite/wa-sqlite.wasm(.web.ts|.ts|.web.tsx|.tsx|.web.mjs|.mjs|.web.js|.js|.web.jsx|.jsx|.web.json|.json|.web.cjs|.cjs|.web.scss|.scss|.web.sass|.sass|.web.css|.css|.web.svg|.svg|.web.css|.css)
+  * ../../node_modules/expo-sqlite/web/wa-sqlite/wa-sqlite.wasm
+[0m [90m 20 |[39m [36mimport[39m [33mWaSQLiteFactory[39m [36mfrom[39m [32m'./wa-sqlite/wa-sqlite'[39m[33m;[39m
+ [90m 21 |[39m [90m// @ts-expect-error wasm module is not typed[39m
+[31m[1m>[22m[39m[90m 22 |[39m [36mimport[39m wasmModule [36mfrom[39m [32m'./wa-sqlite/wa-sqlite.wasm'[39m[33m;[39m
+ [90m    |[39m                         [31m[1m^[22m[39m
+ [90m 23 |[39m [36mimport[39m {
+ [90m 24 |[39m   type [33mSQLiteWorkerMessage[39m[33m,[39m
+ [90m 25 |[39m   type [33mSQLiteWorkerMessageType[39m[33m,[39m[0m
+
+Import stack:
+
+ node_modules/expo-sqlite/web/worker.ts
+ | import "./wa-sqlite/wa-sqlite.wasm"
+
+ node_modules/expo-sqlite/web/SQLiteModule.ts
+ | import "./worker"
+
+ node_modules/expo-sqlite/build/ExpoSQLite.web.js
+ | import "../web/SQLiteModule"
+
+ node_modules/expo-sqlite/build/hooks.js
+ | import "./ExpoSQLite"
+
+ node_modules/expo-sqlite/build/index.js
+ | import "./hooks"
+
+ apps/mobile/services/local/db.ts
+ | import "expo-sqlite"
+
+ apps/mobile/services/local/repository.ts
+ | import "./db"
+
+ apps/mobile/services/local/browsing.ts
+ | import "@/services/local/repository"
+
+ apps/mobile/services/backend/browsing.ts
+ | import "@/services/local/browsing"
+
+ apps/mobile/hooks/backend/useBrowsing.ts
+ | import "@/services/backend/browsing"
+
+ apps/mobile/app/(app)/(tabs)/(home)/index.tsx
+ | import "@/hooks/backend/useBrowsing"
+
+ apps/mobile/app (require.context)

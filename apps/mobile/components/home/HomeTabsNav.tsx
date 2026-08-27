@@ -83,7 +83,7 @@ export default function HomeTabsNav({ active }: HomeTabsNavProps) {
               onPress={() => router.navigate("/(app)/(tabs)/(home)")}
             >
               <Badge
-                className={`rounded-full ${active === "music" ? "bg-emerald-500" : "bg-gray-800"} px-4 py-1 mr-2`}
+                className={`rounded-full ${active === "music" ? "bg-emerald-500/80" : "bg-gray-800/60"} px-4 py-1 mr-2`}
               >
                 <BadgeText className="normal-case text-md text-white">
                   {t("app.home.tabs.music")}
@@ -97,7 +97,7 @@ export default function HomeTabsNav({ active }: HomeTabsNavProps) {
                     router.navigate("/(app)/(tabs)/(home)/podcasts")
                   }
                 >
-                  <Badge className="rounded-full rounded-r-none bg-emerald-500 px-4 py-1 pr-4">
+                  <Badge className="rounded-full rounded-r-none bg-emerald-500/80 px-4 py-1 pr-4">
                     <BadgeText className="normal-case text-md text-white">
                       {t("app.home.tabs.podcasts")}
                     </BadgeText>
@@ -109,7 +109,7 @@ export default function HomeTabsNav({ active }: HomeTabsNavProps) {
                   }
                 >
                   <Badge
-                    className={`rounded-full rounded-l-none ${active === "favoritePodcasts" ? "bg-emerald-600" : "bg-gray-800"} text-primary-800 px-4 py-1 mr-2`}
+                    className={`rounded-full rounded-l-none ${active === "favoritePodcasts" ? "bg-emerald-600/80" : "bg-gray-800/60"} text-primary-800 px-4 py-1 mr-2`}
                   >
                     <BadgeText className="normal-case text-md text-white">
                       {t("app.home.tabs.favoritePodcasts")}
@@ -121,7 +121,7 @@ export default function HomeTabsNav({ active }: HomeTabsNavProps) {
               <FadeOutScaleDown
                 onPress={() => router.navigate("/(app)/(tabs)/(home)/podcasts")}
               >
-                <Badge className="rounded-full bg-gray-800 px-4 py-1 mr-2">
+                <Badge className="rounded-full bg-gray-800/60 px-4 py-1 mr-2">
                   <BadgeText className="normal-case text-md text-white">
                     {t("app.home.tabs.podcasts")}
                   </BadgeText>
@@ -137,7 +137,7 @@ export default function HomeTabsNav({ active }: HomeTabsNavProps) {
                     )
                   }
                 >
-                  <Badge className="rounded-full rounded-r-none bg-emerald-500 px-4 py-1 pr-4">
+                  <Badge className="rounded-full rounded-r-none bg-emerald-500/80 px-4 py-1 pr-4">
                     <BadgeText className="normal-case text-md text-white">
                       {t("app.home.tabs.internetRadioStations")}
                     </BadgeText>
@@ -151,7 +151,7 @@ export default function HomeTabsNav({ active }: HomeTabsNavProps) {
                   }
                 >
                   <Badge
-                    className={`rounded-full rounded-l-none ${active === "internetRadioStationsFavorites" ? "bg-emerald-600" : "bg-gray-800"} text-primary-800 px-4 py-1 mr-2`}
+                    className={`rounded-full rounded-l-none ${active === "internetRadioStationsFavorites" ? "bg-emerald-600/80" : "bg-gray-800/60"} text-primary-800 px-4 py-1 mr-2`}
                   >
                     <BadgeText className="normal-case text-md text-white">
                       {t("app.home.tabs.radioFavorites")}
@@ -168,7 +168,7 @@ export default function HomeTabsNav({ active }: HomeTabsNavProps) {
                   )
                 }
               >
-                <Badge className="rounded-full bg-gray-800 px-4 py-1 mr-2">
+                <Badge className="rounded-full bg-gray-800/60 px-4 py-1 mr-2">
                   <BadgeText className="normal-case text-md text-white">
                     {t("app.home.tabs.internetRadioStations")}
                   </BadgeText>
@@ -178,7 +178,7 @@ export default function HomeTabsNav({ active }: HomeTabsNavProps) {
           </HStack>
         </ScrollView>
         <LinearGradient
-          colors={["#000000", "transparent"]}
+          colors={["transparent", "transparent"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           pointerEvents="none"
@@ -191,7 +191,7 @@ export default function HomeTabsNav({ active }: HomeTabsNavProps) {
           }}
         />
         <LinearGradient
-          colors={["transparent", "#000000"]}
+          colors={["transparent", "transparent"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           pointerEvents="none"

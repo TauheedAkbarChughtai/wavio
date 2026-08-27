@@ -2,13 +2,13 @@ import { DarkTheme, ThemeProvider } from "expo-router/react-navigation";
 import "@/global.css";
 import "@/config/http";
 import {
-  Inter_300Light,
-  Inter_400Regular,
-  Inter_700Bold,
+  Outfit_400Regular,
   useFonts,
-} from "@expo-google-fonts/inter";
+} from "@expo-google-fonts/outfit";
+import { Poppins_700Bold } from "@expo-google-fonts/poppins";
 import { NavigationBar } from "expo-navigation-bar";
 import { Stack } from "expo-router";
+import { DownloadModalProvider } from "@/components/search/DownloadFormatModal";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 
@@ -26,10 +26,11 @@ import {
   onlineManager,
   QueryClientProvider,
 } from "@tanstack/react-query";
+import RootSyncPlayWrapper from "@/components/RootSyncPlayWrapper";
 import { persistQueryClientSubscribe } from "@tanstack/react-query-persist-client";
 import * as Application from "expo-application";
 import { getLocales } from "expo-localization";
-import { AppState, type AppStateStatus, Platform } from "react-native";
+import { AppState, type AppStateStatus, Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import {
@@ -128,20 +129,10 @@ function onAppStateChange(status: AppStateStatus) {
 export default sentryWrap(function RootLayout() {
   const locale = useApp((store) => store.locale);
   const setLocale = useApp((store) => store.setLocale);
-  // Inter has no CJK glyphs, so forcing it under zh-CN renders Latin in Inter and
-  // Chinese in Android's system Noto CJK — a mismatched, uneven mix. Skip loading
-  // Inter for zh-CN so the whole UI falls back to the OS system font (Roboto +
-  // Noto CJK on Android), which renders Latin and CJK consistently and ships zero
-  // extra bytes. font-weight in global.css preserves the type hierarchy.
-  const [loaded] = useFonts(
-    locale === "zh-CN"
-      ? {}
-      : {
-          Inter_400Regular,
-          Inter_300Light,
-          Inter_700Bold,
-        },
-  );
+  const [loaded] = useFonts({
+    Outfit_400Regular,
+    Poppins_700Bold,
+  });
 
   useEffect(() => {
     if (loaded) {
@@ -241,6 +232,8 @@ export default sentryWrap(function RootLayout() {
     }
   }, [locale]);
 
+  const username = useAuthBase((s) => s.username);
+
   if (!loaded) {
     return null;
   }
@@ -249,6 +242,7 @@ export default sentryWrap(function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <KeyboardProvider>
         <GluestackUIProvider mode="dark">
+          <View className={username === 'Tauheed' ? 'theme-tauheed' : 'theme-saramara'} style={{ flex: 1 }}>
           <ThemeProvider value={DarkTheme}>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <StatusBar style="light" />
@@ -257,22 +251,26 @@ export default sentryWrap(function RootLayout() {
                 <TrackActionsProvider>
                   <PodcastEpisodeActionsProvider>
                     <AppErrorBoundary variant="fullscreen">
-                      <Stack
-                        screenOptions={{
-                          headerShown: false,
-                        }}
-                      >
-                        <Stack.Screen name="(app)" />
-                        <Stack.Screen name="(auth)" />
-                        <Stack.Screen name="+not-found" />
-                      </Stack>
+                      <DownloadModalProvider>
+                        <Stack
+                          screenOptions={{
+                            headerShown: false,
+                          }}
+                        >
+                          <Stack.Screen name="(app)" />
+                          <Stack.Screen name="(auth)" />
+                          <Stack.Screen name="+not-found" />
+                        </Stack>
+                      </DownloadModalProvider>
                     </AppErrorBoundary>
                     <CarAutoSync />
+                    <RootSyncPlayWrapper />
                   </PodcastEpisodeActionsProvider>
                 </TrackActionsProvider>
               </BottomSheetModalProvider>
             </GestureHandlerRootView>
           </ThemeProvider>
+          </View>
         </GluestackUIProvider>
       </KeyboardProvider>
     </QueryClientProvider>

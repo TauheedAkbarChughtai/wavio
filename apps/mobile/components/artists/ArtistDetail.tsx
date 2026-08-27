@@ -59,8 +59,9 @@ import {
   useArtist,
   useArtistAppearances,
   useArtistInfo2,
-  useTopSongs,
 } from "@/hooks/backend/useBrowsing";
+import { useMergedArtistTopTracks } from "@/hooks/external/useMergedArtistTopTracks";
+import { useLastFmArtistInfo } from "@/hooks/external/useLastFm";
 import { useStarred2 } from "@/hooks/backend/useLists";
 import {
   useSetRating,
@@ -116,11 +117,12 @@ export default function ArtistDetail() {
   const { data, isLoading, error } = useArtist(id);
   const { data: artistInfoData, isLoading: isLoadingArtistInfo } =
     useArtistInfo2(id, { count: 10 });
+  const { data: lastFmBio } = useLastFmArtistInfo(data?.artist?.name);
   const {
     data: topSongsData,
     isLoading: isLoadingTopSongs,
-    error: topSongsError,
-  } = useTopSongs(data?.artist?.name ?? "", { count: 10 });
+    isError: topSongsError,
+  } = useMergedArtistTopTracks(data?.artist?.name ?? "") as any;
   const musicFolderId = useCurrentMusicFolderId();
   const { data: appearancesData } = useArtistAppearances(id, {
     name: data?.artist?.name,
@@ -309,7 +311,7 @@ export default function ArtistDetail() {
     [data?.artist],
   );
   const handleTopSongPress = useTrackListPress(
-    topSongsData?.topSongs.song,
+    topSongsData?.song,
     artistSource,
   );
   const handlePlayPress = async () => {
@@ -317,7 +319,7 @@ export default function ArtistDetail() {
       togglePlayPause();
       return;
     }
-    const topSongs = topSongsData?.topSongs?.song;
+    const topSongs = topSongsData?.song;
     if (topSongs && topSongs.length > 0) {
       playTracks(topSongs.map(childToTrack), 0, {
         shuffleFromRandom: true,
@@ -600,7 +602,7 @@ export default function ArtistDetail() {
               <AnimatedBox
                 className="overflow-hidden mb-4"
                 style={
-                  (topSongsData?.topSongs.song?.length || 0) > 5 ||
+                  (topSongsData?.song?.length || 0) > 5 ||
                   isLoadingTopSongs
                     ? topSongsAnimatedStyle
                     : undefined
@@ -634,7 +636,7 @@ export default function ArtistDetail() {
                     ))
                   ) : (
                     <>
-                      {topSongsData?.topSongs.song?.map((song, index) => (
+                      {topSongsData?.song?.map((song: any, index: number) => (
                         <TrackListItem
                           key={song.id}
                           showIndex
@@ -650,9 +652,9 @@ export default function ArtistDetail() {
 
                   {!isLoadingTopSongs &&
                     !topSongsError &&
-                    !topSongsData?.topSongs.song?.length && <EmptyDisplay />}
+                    !topSongsData?.song?.length && <EmptyDisplay />}
 
-                  {(topSongsData?.topSongs?.song?.length || 0) > 5 && (
+                  {(topSongsData?.song?.length || 0) > 5 && (
                     <Animated.View
                       pointerEvents={topSongsExpanded ? "auto" : "none"}
                       style={topSongsSeeLessStyle}
@@ -670,7 +672,7 @@ export default function ArtistDetail() {
                     </Animated.View>
                   )}
                 </Box>
-                {(topSongsData?.topSongs?.song?.length || 0) > 5 && (
+                {(topSongsData?.song?.length || 0) > 5 && (
                   <Animated.View
                     pointerEvents={topSongsExpanded ? "none" : "auto"}
                     style={[
@@ -755,7 +757,7 @@ export default function ArtistDetail() {
                 </ScrollView>
               </VStack>
             )}
-            {artistInfoData?.artistInfo2?.biography && (
+            {(lastFmBio || artistInfoData?.artistInfo2?.biography) && (
               <VStack className="px-6 bg-black">
                 <Heading className="text-white mb-6">
                   {t("app.artists.about")}
@@ -765,7 +767,7 @@ export default function ArtistDetail() {
                     pathname: "/artists/[id]/biography",
                     params: {
                       id,
-                      biography: artistInfoData?.artistInfo2?.biography,
+                      biography: lastFmBio || artistInfoData?.artistInfo2?.biography,
                       name: data?.artist?.name,
                       musicBrainzId: artistInfoData?.artistInfo2?.musicBrainzId,
                       lastFmUrl: artistInfoData?.artistInfo2?.lastFmUrl,
@@ -793,7 +795,7 @@ export default function ArtistDetail() {
                         }}
                       >
                         <RichText className="text-white" numberOfLines={3}>
-                          {artistInfoData?.artistInfo2?.biography}
+                          {lastFmBio || artistInfoData?.artistInfo2?.biography || ""}
                         </RichText>
                       </LinearGradient>
                     </Box>

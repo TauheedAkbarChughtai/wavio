@@ -199,36 +199,6 @@ export default function DrawerMenu({ onClose }: DrawerMenuProps) {
               </Text>
             </VStack>
           </Pressable>
-          {otherUsers.length > 0 && (
-            <Select>
-              <SelectTrigger
-                variant="outline"
-                className="border-0 p-2 rounded-full active:bg-primary-800"
-                accessibilityLabel={t("app.shared.sidebar.switchUser")}
-              >
-                <ArrowLeftRight size={22} color={white} />
-              </SelectTrigger>
-              <SelectPortal>
-                <SelectBackdrop />
-                <SelectContent className="bg-primary-600">
-                  <SelectDragIndicatorWrapper className="mb-4">
-                    <SelectDragIndicator />
-                  </SelectDragIndicatorWrapper>
-                  <SelectScrollView>
-                    <Box className="px-4 pb-12 w-full">
-                      {otherUsers.map((u) => (
-                        <SwitchUserRow
-                          key={`${u.serverId}:${u.username}`}
-                          user={u}
-                          onSelect={handleSwitchUser}
-                        />
-                      ))}
-                    </Box>
-                  </SelectScrollView>
-                </SelectContent>
-              </SelectPortal>
-            </Select>
-          )}
         </HStack>
       </View>
       <ScrollView
@@ -269,49 +239,11 @@ export default function DrawerMenu({ onClose }: DrawerMenuProps) {
               "flex-row items-center border-primary-500 gap-x-4 rounded-md active:bg-primary-800",
               isWideLayout ? "mx-1 my-0.5 px-4 py-2.5" : "m-1 p-4",
             )}
-            onPress={handleLibrariesPress}
-          >
-            <Library size={24} color={white} />
-            <Heading size="lg" className="text-white font-normal">
-              {t("app.shared.sidebar.libraries")}
-            </Heading>
-          </Pressable>
-          <Pressable
-            className={cn(
-              "flex-row items-center border-primary-500 gap-x-4 rounded-md active:bg-primary-800",
-              isWideLayout ? "mx-1 my-0.5 px-4 py-2.5" : "m-1 p-4",
-            )}
-            onPress={handleServersPress}
-          >
-            <Server size={24} color={white} />
-            <Heading size="lg" className="text-white font-normal">
-              {t("app.shared.sidebar.servers")}
-            </Heading>
-          </Pressable>
-          {capabilities.sharing && (
-            <Pressable
-              className={cn(
-                "flex-row items-center border-primary-500 gap-x-4 rounded-md active:bg-primary-800",
-                isWideLayout ? "mx-1 my-0.5 px-4 py-2.5" : "m-1 p-4",
-              )}
-              onPress={handleSharesPress}
-            >
-              <Share2 size={24} color={white} />
-              <Heading size="lg" className="text-white font-normal">
-                {t("app.shared.sidebar.shares")}
-              </Heading>
-            </Pressable>
-          )}
-          <Pressable
-            className={cn(
-              "flex-row items-center border-primary-500 gap-x-4 rounded-md active:bg-primary-800",
-              isWideLayout ? "mx-1 my-0.5 px-4 py-2.5" : "m-1 p-4",
-            )}
             onPress={handleSettingsPress}
           >
             <Settings size={24} color={white} />
             <Heading size="lg" className="text-white font-normal">
-              {t("app.shared.sidebar.settings")}
+              Storage & App Data
             </Heading>
           </Pressable>
           <Pressable
@@ -343,30 +275,6 @@ export default function DrawerMenu({ onClose }: DrawerMenuProps) {
             <ShieldCheck size={20} color={white} />
             <Text className="text-white">
               {t("app.shared.sidebar.privacyPolicy")}
-            </Text>
-          </Pressable>
-          <Pressable
-            className={cn(
-              "flex-row items-center gap-x-3 rounded-md active:bg-primary-800",
-              isWideLayout ? "mx-1 my-0.5 px-3 py-2" : "m-1 p-3",
-            )}
-            onPress={handleBugReportPress}
-          >
-            <Bug size={20} color={white} />
-            <Text className="text-white">
-              {t("app.shared.sidebar.bugReport")}
-            </Text>
-          </Pressable>
-          <Pressable
-            className={cn(
-              "flex-row items-center gap-x-3 rounded-md active:bg-primary-800",
-              isWideLayout ? "mx-1 my-0.5 px-3 py-2" : "m-1 p-3",
-            )}
-            onPress={handleChangelogPress}
-          >
-            <ClipboardClock size={20} color={white} />
-            <Text className="text-white">
-              {t("app.shared.sidebar.changelog")}
             </Text>
           </Pressable>
           <Text className="mt-2 ml-4 text-primary-100">
