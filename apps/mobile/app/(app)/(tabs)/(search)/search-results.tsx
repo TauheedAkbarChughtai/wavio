@@ -17,7 +17,7 @@ import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Input, InputField, InputIcon, InputSlot } from "@/components/ui/input";
 import { ScrollView } from "@/components/ui/scroll-view";
-import { useSearch3 } from "@/hooks/backend/useSearching";
+import { useUnifiedSearch as useSearch3 } from "@/hooks/backend/useUnifiedSearch";
 import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
 import type { AlbumID3, ArtistID3, Child } from "@/services/openSubsonic/types";
 import { useCurrentMusicFolderId } from "@/stores/musicFolders";
@@ -37,15 +37,7 @@ export default function SearchResultsScreen() {
   const screenBottomPadding = useScreenBottomPadding();
   const insets = useSafeAreaInsets();
   const musicFolderId = useCurrentMusicFolderId();
-  const { data, isLoading, error } = useSearch3(query, {
-    albumCount: 12,
-    albumOffset: 0,
-    songCount: 12,
-    songOffset: 0,
-    artistCount: 12,
-    artistOffset: 0,
-    musicFolderId,
-  });
+  const { data, isLoading, error } = useSearch3(query, 12) as any;
   const router = useRouter();
   const form = useForm({
     defaultValues: {

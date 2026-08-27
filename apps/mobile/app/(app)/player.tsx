@@ -1,6 +1,9 @@
 import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useRouter } from "expo-router";
+import PlayerBackground from "@/components/player/PlayerBackground";
+import SyncPlayToggle from "@/components/player/SyncPlayToggle";
+import { artworkUrl } from "@/utils/artwork";
 import AudioLines from "lucide-react-native/dist/esm/icons/audio-lines.mjs";
 import ChevronDown from "lucide-react-native/dist/esm/icons/chevron-down.mjs";
 import EllipsisVertical from "lucide-react-native/dist/esm/icons/ellipsis-vertical.mjs";
@@ -378,11 +381,7 @@ export default function PlayerScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={[topColor, "#191A1F"]}
-      locations={[0, 0.7]}
-      style={{ flex: 1 }}
-    >
+    <PlayerBackground artworkUrl={playingTrack?.coverArt ? artworkUrl(playingTrack.coverArt) : undefined}>
       <VStack
         className="flex-1"
         style={{
@@ -442,6 +441,7 @@ export default function PlayerScreen() {
               </Text>
             )}
           </VStack>
+          <SyncPlayToggle />
           <FadeOutScaleDown
             testID="player-menu-button"
             onPress={handlePresentModalPress}
@@ -710,6 +710,6 @@ export default function PlayerScreen() {
         onAddFavoritePodcast={handleAddFavoritePodcastPress}
         onRemoveFavoritePodcast={handleRemoveFavoritePodcastPress}
       />
-    </LinearGradient>
+    </PlayerBackground>
   );
 }

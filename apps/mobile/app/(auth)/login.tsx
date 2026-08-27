@@ -12,8 +12,11 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Uniwind } from "uniwind";
 import Logo from "@/assets/images/logo.svg";
+const user1Img = require("@/assets/images/user1.png");
+const user2Img = require("@/assets/images/user2.png");
 import CertificateTrustDialog from "@/components/auth/CertificateTrustDialog";
 import LocalLibraryInfoDialog from "@/components/auth/LocalLibraryInfoDialog";
+import { View } from "react-native";
 import FadeOutScaleDown from "@/components/FadeOutScaleDown";
 import AdvancedSettingsSection from "@/components/forms/AdvancedSettingsSection";
 import ClientCertificateField from "@/components/forms/ClientCertificateField";
@@ -30,6 +33,7 @@ import {
   Avatar,
   AvatarFallbackText,
   AvatarGroup,
+  AvatarImage,
 } from "@/components/ui/avatar";
 import { Box } from "@/components/ui/box";
 import { Center } from "@/components/ui/center";
@@ -84,6 +88,8 @@ import useServers, {
   type ServerType,
   type ServerUser,
 } from "@/stores/servers";
+import { computeSubsonicToken } from "@/services/openSubsonic/auth";
+import { generateSalt } from "@/services/openSubsonic/auth";
 
 function ServerSelectRow({
   server,
@@ -181,6 +187,8 @@ export default function LoginScreen() {
         )
       : false,
   );
+
+  const [loggingInUser, setLoggingInUser] = useState<string | null>(null);
 
   const form = useForm({
     defaultValues: {
@@ -404,356 +412,135 @@ export default function LoginScreen() {
   const triggerLabel =
     preselectedServer?.name ?? t("auth.login.serverPlaceholder");
 
+  const handleUserLogin = async (userType: 'Tauheed' | 'saramara') => {
+    if (loggingInUser) return;
+    setLoggingInUser(userType);
+
+    try {
+      let targetUrl = "https://music.tauheedakbar.com";
+      let username = "";
+      let password = "";
+
+      if (userType === 'Tauheed') {
+        username = "Tauheed";
+        password = "ActuallyStrongPassword1!";
+
+        try {
+          const pingPromise = axios.get("http://192.168.100.93:4533/rest/ping.view", { params: { u: username, p: password, v: '1.16.1', c: 'WavioMobileApp' } });
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000));
+
+          await Promise.race([pingPromise, timeoutPromise]);
+          targetUrl = "http://192.168.100.93:4533";
+        } catch (e) {
+          // Keep remote URL on failure
+        }
+      } else {
+        username = "saramara";
+        password = "multansultan789";
+      }
+
+      const serverType: ServerType = "navidrome";
+
+      const { options, activeUrl } = await authenticateWithFallback(
+        serverType,
+        targetUrl,
+        undefined,
+        username,
+        password,
+      );
+
+      const server = addServer({
+        name: "Wavio Custom 2-Player Ecosystem",
+        url: targetUrl,
+        type: serverType,
+        fallbackUrl: undefined,
+      });
+
+      addOrUpdateUser({
+        serverId: server.id,
+        username: username,
+        password: password,
+      });
+
+      setCurrentServer(server.id);
+
+      login({
+        serverId: server.id,
+        url: activeUrl,
+        username: username,
+        password: password,
+        ...options,
+      });
+
+    } catch (e) {
+      toast.show({
+        placement: "top",
+        duration: 3000,
+        render: () => (
+          <Toast action="error">
+            <ToastTitle>{t("app.shared.toastErrorTitle")}</ToastTitle>
+            <ToastDescription>Login failed</ToastDescription>
+          </Toast>
+        ),
+      });
+      setLoggingInUser(null);
+    }
+  };
+
   return (
-    <Box className="flex-1 bg-primary-800">
-      <LoginBackground />
-      <KeyboardAwareScrollView
-        bottomOffset={24}
-        contentContainerStyle={{
-          flexGrow: 1,
+    <Box className="flex-1 bg-black">
+      <View
+        style={{
+          flex: 1,
           justifyContent: "center",
-          paddingTop: insets.top + 24,
-          paddingBottom: insets.bottom + 24,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
           paddingLeft: insets.left,
           paddingRight: insets.right,
         }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
       >
-        <Box className="px-6 w-full max-w-[480px] self-center">
-          <Center className="mb-4 ">
+        <Box className="px-6 w-full max-w-[480px] self-center items-center">
+          <Center className="mb-12">
             <Logo width={64} height={64} />
           </Center>
-          <Heading size="2xl" className="text-white font-bold mb-6">
-            {t("auth.login.title")}
-          </Heading>
-          {servers && servers.length > 0 && (
-            <Box>
-              <Select onValueChange={handleServerChange}>
-                <SelectTrigger className="bg-primary-600 border border-primary-600 rounded-md px-6 py-3 data-[focus=true]:border-emerald-500 data-[invalid=true]:border-red-500">
-                  <SelectInput
-                    placeholder={t("auth.login.serverPlaceholder")}
-                    value={triggerLabel}
-                    className="text-md text-white"
-                    placeholderTextColor={white}
-                  />
-                  <SelectIcon as={ChevronDownIcon} />
-                </SelectTrigger>
-                <SelectPortal>
-                  <SelectBackdrop />
-                  <SelectContent className="bg-primary-600">
-                    <SelectDragIndicatorWrapper className="mb-6">
-                      <SelectDragIndicator />
-                    </SelectDragIndicatorWrapper>
-                    <SelectScrollView>
-                      <Box className="p-6 w-full mb-12 divide-y divide-y-white">
-                        {servers.map((server) => (
-                          <ServerSelectRow
-                            key={server.id}
-                            server={server}
-                            users={allUsers.filter(
-                              (u) => u.serverId === server.id,
-                            )}
-                          />
-                        ))}
-                      </Box>
-                    </SelectScrollView>
-                  </SelectContent>
-                </SelectPortal>
-              </Select>
-              <Text className="text-primary-100 text-center my-4">
-                {t("auth.login.choice")}
-              </Text>
-            </Box>
-          )}
-          <form.Field name="type">
-            {(field) => (
-              <VStack className="mb-4 gap-y-4">
-                {serverTypeRows.map(([a, b]) => (
-                  <HStack key={a.value} className="gap-x-4">
-                    {[a, b].map((opt) => {
-                      if (!opt) return null;
-                      const selected = field.state.value === opt.value;
-                      return (
-                        <FadeOutScaleDown
-                          key={opt.value}
-                          onPress={() => field.handleChange(opt.value)}
-                          className="flex-1"
-                        >
-                          <HStack
-                            className={`items-center rounded-md bg-primary-600 border-2 py-3 px-3 gap-x-3 ${
-                              selected
-                                ? "border-emerald-500"
-                                : "border-primary-600"
-                            }`}
-                          >
-                            <ServerTypeIcon type={opt.value} size={28} />
-                            <Text
-                              className="text-sm text-white font-bold flex-1"
-                              numberOfLines={2}
-                            >
-                              {opt.label}
-                            </Text>
-                          </HStack>
-                        </FadeOutScaleDown>
-                      );
-                    })}
-                  </HStack>
-                ))}
-              </VStack>
-            )}
-          </form.Field>
-          <form.Subscribe selector={(state) => state.values.type}>
-            {(type) =>
-              type === "local" ? (
-                <form.Field name="paths">
-                  {(field) => (
-                    <LocalPathsField
-                      value={field.state.value}
-                      onChange={field.handleChange}
-                    />
+
+          <HStack className="w-full justify-around items-center gap-x-8">
+            <VStack className="items-center">
+              <FadeOutScaleDown onPress={() => handleUserLogin('Tauheed')}>
+                <Box className={`relative ${loggingInUser === 'saramara' ? 'opacity-50' : 'opacity-100'}`}>
+                  <Avatar className="w-24 h-24 mb-4">
+                    <AvatarImage source={user1Img} />
+                    <AvatarFallbackText>Tauheed</AvatarFallbackText>
+                  </Avatar>
+                  {loggingInUser === 'Tauheed' && (
+                    <Box className="absolute inset-0 items-center justify-center bg-black/50 rounded-full w-24 h-24">
+                      <Spinner size="large" color={white} />
+                    </Box>
                   )}
-                </form.Field>
-              ) : (
-                <>
-                  <form.Field name="url">
-                    {(field) => (
-                      <FormControl
-                        isInvalid={showFieldError(field)}
-                        isDisabled={false}
-                        isReadOnly={false}
-                        isRequired={false}
-                        className="mb-2 mt-0"
-                      >
-                        <Input className="border border-primary-600 bg-primary-600 data-[focus=true]:border-emerald-500 data-[invalid=true]:border-red-500 rounded-md px-6 py-2">
-                          <UrlInputField
-                            value={field.state.value}
-                            onChangeText={field.handleChange}
-                            onBlur={() => handleFieldBlur(field)}
-                            placeholder={t("auth.login.urlPlaceholder")}
-                          />
-                        </Input>
-                        <FieldError field={field} />
-                      </FormControl>
-                    )}
-                  </form.Field>
-                  <form.Field name="username">
-                    {(field) => (
-                      <FormControl
-                        isInvalid={showFieldError(field)}
-                        size="md"
-                        isDisabled={false}
-                        isReadOnly={false}
-                        isRequired={false}
-                        className="my-2"
-                      >
-                        <Input className="border border-primary-600 bg-primary-600 data-[focus=true]:border-emerald-500 data-[invalid=true]:border-red-500 rounded-md px-6 py-2">
-                          <InputField
-                            disableFullscreenUI
-                            ref={usernameRef}
-                            value={field.state.value}
-                            onChangeText={field.handleChange}
-                            onBlur={() => handleFieldBlur(field)}
-                            className="text-md text-white"
-                            placeholder={t("auth.login.usernamePlaceholder")}
-                            autoCapitalize="none"
-                            textContentType="username"
-                            returnKeyType="next"
-                            onSubmitEditing={() => passwordRef.current?.focus()}
-                          />
-                        </Input>
-                        <FieldError field={field} />
-                      </FormControl>
-                    )}
-                  </form.Field>
-                  <form.Field name="password">
-                    {(field) => (
-                      <FormControl
-                        isInvalid={showFieldError(field)}
-                        size="md"
-                        isDisabled={false}
-                        isReadOnly={false}
-                        isRequired={false}
-                        className="my-2"
-                      >
-                        <Input className="border border-primary-600 bg-primary-600 data-[focus=true]:border-emerald-500 data-[invalid=true]:border-red-500 rounded-md px-6 py-2">
-                          <InputField
-                            disableFullscreenUI
-                            ref={passwordRef}
-                            value={field.state.value}
-                            onChangeText={field.handleChange}
-                            onBlur={() => handleFieldBlur(field)}
-                            className="text-md text-white"
-                            placeholder={t("auth.login.passwordPlaceholder")}
-                            secureTextEntry={!showPassword}
-                            autoCapitalize="none"
-                            textContentType="password"
-                            returnKeyType="go"
-                            onSubmitEditing={() => form.handleSubmit()}
-                          />
-                          <InputSlot>
-                            <Pressable
-                              onPress={() => setShowPassword((v) => !v)}
-                              accessibilityRole="button"
-                              accessibilityLabel={
-                                showPassword
-                                  ? t("auth.login.hidePassword")
-                                  : t("auth.login.showPassword")
-                              }
-                            >
-                              {showPassword ? (
-                                <EyeOffIcon size={20} color={white} />
-                              ) : (
-                                <EyeIcon size={20} color={white} />
-                              )}
-                            </Pressable>
-                          </InputSlot>
-                        </Input>
-                        <FieldError field={field} />
-                      </FormControl>
-                    )}
-                  </form.Field>
-                  <Checkbox
-                    value="save-credentials"
-                    isChecked={saveCredentials}
-                    onChange={setSaveCredentials}
-                    className="my-2"
-                  >
-                    <CheckboxIndicator className="border-primary-100 data-[checked=true]:bg-emerald-500 data-[checked=true]:border-emerald-500">
-                      <CheckboxIcon as={CheckIcon} />
-                    </CheckboxIndicator>
-                    <CheckboxLabel className="text-primary-100">
-                      {t("auth.login.saveCredentials")}
-                    </CheckboxLabel>
-                  </Checkbox>
-                  {/* The section itself is cross-platform now that it holds the
-                      fallback URL; only the client certificate stays gated on
-                      Android + the native trust module. */}
-                  <AdvancedSettingsSection>
-                    <form.Field name="fallbackUrl">
-                      {(field) => (
-                        <FallbackUrlField
-                          field={field}
-                          placeholder={t("auth.login.fallbackUrlPlaceholder")}
-                        />
-                      )}
-                    </form.Field>
-                    {Platform.OS === "android" && isSslTrustAvailable() && (
-                      <form.Field name="mtlsAlias">
-                        {(field) => (
-                          <form.Subscribe
-                            selector={(state) => state.values.url}
-                          >
-                            {(url) => (
-                              <ClientCertificateField
-                                value={field.state.value || undefined}
-                                host={hostnameFromUrl(url ?? "")}
-                                onChange={(alias) =>
-                                  field.handleChange(alias ?? "")
-                                }
-                              />
-                            )}
-                          </form.Subscribe>
-                        )}
-                      </form.Field>
-                    )}
-                  </AdvancedSettingsSection>
-                </>
-              )
-            }
-          </form.Subscribe>
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <FadeOutScaleDown
-                onPress={() => {
-                  // Local logins have no credentials to edit and the saved
-                  // folders pre-fill `paths`, so the form is never dirty on
-                  // re-login; gate them on type instead. Remote servers keep
-                  // the dirty guard.
-                  const { isDirty, values } = form.state;
-                  if (isDirty || values.type === "local") form.handleSubmit();
-                }}
-                disabled={isSubmitting}
-                className="items-center justify-center py-3 px-8 border border-emerald-500 bg-emerald-500 rounded-full ml-4 mt-4"
-              >
-                {isSubmitting ? (
-                  <Spinner color={primary800} />
-                ) : (
-                  <Text className="text-primary-800 font-bold text-lg">
-                    {t("auth.login.login")}
-                  </Text>
-                )}
+                </Box>
               </FadeOutScaleDown>
-            )}
-          </form.Subscribe>
-          <form.Subscribe selector={(state) => state.values.type}>
-            {(type) => {
-              if (type === "navidrome")
-                return (
-                  <>
-                    <FadeOutScaleDown
-                      onPress={handleDemoModePress}
-                      className="mt-12"
-                    >
-                      <Text className="text-primary-100 text-center text-sm">
-                        {t("auth.login.demo")}
-                      </Text>
-                    </FadeOutScaleDown>
-                    <FadeOutScaleDown
-                      onPress={handleNavidromeSetupHelpPress}
-                      className="mt-4"
-                    >
-                      <Text className="text-primary-100 text-center text-sm">
-                        {t("auth.login.navidromeSetupHelp")}
-                      </Text>
-                    </FadeOutScaleDown>
-                  </>
-                );
-              if (type === "jellyfin")
-                return (
-                  <FadeOutScaleDown
-                    onPress={handleJellyfinSetupHelpPress}
-                    className="mt-12"
-                  >
-                    <Text className="text-primary-100 text-center text-sm">
-                      {t("auth.login.jellyfinSetupHelp")}
-                    </Text>
-                  </FadeOutScaleDown>
-                );
-              if (type === "local")
-                return (
-                  <FadeOutScaleDown
-                    onPress={() => setShowLocalInfo(true)}
-                    className="mt-12"
-                  >
-                    <Text className="text-primary-100 text-center text-sm">
-                      {t("auth.login.localSetupHelp")}
-                    </Text>
-                  </FadeOutScaleDown>
-                );
-              return null;
-            }}
-          </form.Subscribe>
+              <Text className="text-white text-lg font-semibold">Tauheed</Text>
+            </VStack>
+
+            <VStack className="items-center">
+              <FadeOutScaleDown onPress={() => handleUserLogin('saramara')}>
+                <Box className={`relative ${loggingInUser === 'Tauheed' ? 'opacity-50' : 'opacity-100'}`}>
+                  <Avatar className="w-24 h-24 mb-4">
+                    <AvatarImage source={user2Img} />
+                    <AvatarFallbackText>saramara</AvatarFallbackText>
+                  </Avatar>
+                  {loggingInUser === 'saramara' && (
+                    <Box className="absolute inset-0 items-center justify-center bg-black/50 rounded-full w-24 h-24">
+                      <Spinner size="large" color={white} />
+                    </Box>
+                  )}
+                </Box>
+              </FadeOutScaleDown>
+              <Text className="text-white text-lg font-semibold">saramara</Text>
+            </VStack>
+          </HStack>
         </Box>
-      </KeyboardAwareScrollView>
-      <LocalLibraryInfoDialog
-        isOpen={showLocalInfo}
-        onClose={() => setShowLocalInfo(false)}
-      />
-      <CertificateTrustDialog
-        isOpen={sslPromptUrl != null}
-        url={sslPromptUrl}
-        onClose={() => setSslPromptUrl(null)}
-        onTrusted={async (hostname, fingerprint) => {
-          await trustCertificate(hostname, fingerprint);
-          // iOS: (re)start the loopback proxy so AVPlayer can reach the now
-          // trusted host. No-op on Android, where trust is global.
-          await syncSslProxy();
-          setSslPromptUrl(null);
-          // Retry the login now that the certificate is trusted.
-          form.handleSubmit();
-        }}
-      />
+      </View>
     </Box>
   );
 }

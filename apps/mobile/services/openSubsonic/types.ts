@@ -139,6 +139,7 @@ export interface Child {
   album?: string;
   albumId?: string;
   artist?: string;
+  isOwned?: boolean;
   artistId?: string;
   averageRating?: number;
   bitRate?: number;

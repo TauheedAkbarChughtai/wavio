@@ -6,6 +6,7 @@ import DownloadedBadge from "@/components/DownloadedBadge";
 import FadeOutScaleDown from "@/components/FadeOutScaleDown";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { Box } from "@/components/ui/box";
+import ThemedCardBackground from "@/components/ThemedCardBackground";
 import { Heading } from "@/components/ui/heading";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -39,7 +40,7 @@ function PlaylistListItem({
     <FadeOutScaleDown
       href={`/playlists/${playlist.id}`}
       disabled={!isDetailCached && !isDownloaded}
-      className={cn(className, {
+      className={cn(className, "bg-transparent overflow-hidden relative", {
         "mt-0": layout === "vertical" && index === 0,
         "pt-4": layout === "vertical" && index !== 0,
         "px-6": layout === "vertical",
@@ -52,6 +53,7 @@ function PlaylistListItem({
           "flex-row items-center": layout === "vertical",
         })}
       >
+        <ThemedCardBackground />
         <ImageWithFallback
           source={
             playlist.coverArt

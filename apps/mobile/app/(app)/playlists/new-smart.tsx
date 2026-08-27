@@ -220,10 +220,10 @@ export default function NewSmartPlaylistScreen() {
               <HStack className="items-center justify-between">
                 <VStack className="shrink pr-4">
                   <Text className="text-white font-bold">
-                    {t("app.editPlaylist.publicLabel")}
+                    Shared with friend
                   </Text>
                   <Text className="text-primary-100 text-sm">
-                    {t("app.editPlaylist.publicDescription")}
+                    Make this smart playlist visible to the other user.
                   </Text>
                 </VStack>
                 <Switch

@@ -6,6 +6,7 @@ import { mulberry32, shuffle } from "@/utils/shuffle";
 
 export type HomeSectionDescriptor =
   | { id: string; kind: "recentPlays" }
+  | { id: string; kind: "friendRotation" }
   | { id: string; kind: "nowPlaying" }
   | {
       id: string;
@@ -49,6 +50,10 @@ export type HomeSectionDescriptor =
 // (moreFromArtist, songsByGenre, albumsByGenre, albumsByDecade) share one key
 // across their instances.
 const HOME_SECTION_CATALOG_ENTRIES = [
+  {
+    key: "friendRotation",
+    labelKey: "friendRotation",
+  },
   {
     key: "recentPlays",
     labelKey: "app.settings.displaySettings.homeSections.recentPlays",
@@ -164,6 +169,7 @@ export function buildHomeFeed({
 
   const sections: HomeSectionDescriptor[] = [];
 
+  sections.push({ id: "friendRotation", kind: "friendRotation" });
   sections.push({ id: "recentPlays", kind: "recentPlays" });
   sections.push({
     id: "albumList:recent",

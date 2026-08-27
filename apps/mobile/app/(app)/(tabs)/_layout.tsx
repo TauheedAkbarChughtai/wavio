@@ -19,6 +19,7 @@ import {
 import OfflineBanner, {
   OFFLINE_BANNER_HEIGHT,
 } from "@/components/OfflineBanner";
+import TabVideoBackground from "@/components/TabVideoBackground";
 import { useIsOnline } from "@/hooks/useIsOnline";
 import useApp from "@/stores/app";
 
@@ -35,7 +36,8 @@ export default function TabLayout() {
   const isWideLayout = useApp((store) => store.isWideLayout);
   const insets = useSafeAreaInsets();
   const segments = useSegments();
-  const isOnSearchIndex = segments[segments.length - 1] === "(search)";
+  const currentTab = segments[segments.length - 1];
+  const isOnSearchIndex = currentTab === "(search)";
 
   const handleAddTabPress = () => {
     addBottomSheetRef.current?.present();
@@ -43,9 +45,11 @@ export default function TabLayout() {
 
   return (
     <>
+      <TabVideoBackground activeTab={currentTab} />
       <Tabs
         screenOptions={{
           headerShown: false,
+          sceneStyle: { backgroundColor: 'transparent' },
           tabBarLabelStyle: {
             // Family + weight, like the font-bold utility in global.css: Inter Bold
             // when loaded, bold system font under zh-CN (see app/_layout.tsx).
@@ -101,14 +105,10 @@ export default function TabLayout() {
             ) : (
               <LinearGradient
                 colors={[
-                  "rgba(0,0,0, 0)",
                   "rgba(0,0,0, 0.4)",
-                  "rgba(0,0,0, 0.6)",
-                  "rgba(0,0,0, 0.85)",
-                  "rgb(0,0,0, 0.9)",
+                  "rgba(0,0,0, 0.8)",
                 ]}
                 style={{ height: "100%" }}
-                locations={[0, 0.1, 0.2, 0.5, 1]}
               >
                 <OfflineBanner />
               </LinearGradient>
@@ -174,6 +174,21 @@ export default function TabLayout() {
             tabPress: (e) => {
               e.preventDefault();
               navigation.navigate("(library)", { screen: "index" });
+            },
+          })}
+        />
+        <Tabs.Screen
+          name="(discover)"
+          options={{
+            title: "Discover",
+            tabBarIcon: ({ color }) => (
+              <Search color={color} size={24} />
+            ),
+          }}
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              e.preventDefault();
+              navigation.navigate("(discover)", { screen: "index" });
             },
           })}
         />

@@ -9,6 +9,8 @@ import { useTranslation } from "react-i18next";
 import { Uniwind } from "uniwind";
 import FadeOutScaleDown from "@/components/FadeOutScaleDown";
 import { Box } from "@/components/ui/box";
+import { useDownloadModal } from "@/components/search/DownloadFormatModal";
+import CloudDownload from "lucide-react-native/dist/esm/icons/cloud-download.mjs";
 import { Heading } from "@/components/ui/heading";
 import { HStack } from "@/components/ui/hstack";
 import { Image } from "@/components/ui/image";
@@ -21,10 +23,15 @@ import { cn } from "@/utils/tailwind";
 
 function SearchResultListItemIcon({
   type,
+  isOwned,
 }: {
   type: "artist" | "album" | "playlist" | "song";
+  isOwned?: boolean;
 }) {
   const [white] = Uniwind.getCSSVariable(["--color-white"]) as string[];
+  if (isOwned === false) {
+    return <CloudDownload size={24} color={white} />;
+  }
   if (type === "song") {
     return <AudioLines size={24} color={white} fill={white} />;
   }
@@ -46,6 +53,7 @@ export default function SearchResultListItem({
   searchResult: AlbumID3 & Child & ArtistID3;
 }) {
   const { t } = useTranslation();
+  const { openDownloadModal } = useDownloadModal();
   const type = useMemo<{
     id: "artist" | "album" | "playlist" | "song";
     label: string;
@@ -86,6 +94,9 @@ export default function SearchResultListItem({
   }, [searchResult, t]);
 
   const handlePress = () => {
+    if (searchResult.isOwned === false) {
+      return openDownloadModal(searchResult);
+    }
     // An offline song whose owning album couldn't be resolved would route to
     // `/albums/undefined`; skip rather than navigate to a dead route.
     if (type.id === "song" && !searchResult.albumId) {
@@ -104,7 +115,7 @@ export default function SearchResultListItem({
 
   return (
     <FadeOutScaleDown onPress={handlePress}>
-      <HStack className="items-center justify-between mb-4">
+      <HStack className={cn("items-center justify-between mb-4", searchResult.isOwned === false ? "opacity-60" : "")}>
         <HStack className="items-center">
           {searchResult.coverArt ? (
             <Image
@@ -123,7 +134,7 @@ export default function SearchResultListItem({
                 },
               )}
             >
-              <SearchResultListItemIcon type={type.id} />
+              <SearchResultListItemIcon type={type.id} isOwned={searchResult.isOwned} />
             </Box>
           )}
           <VStack className="ml-4 flex-1">
