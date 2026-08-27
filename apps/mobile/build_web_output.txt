@@ -9,53 +9,40 @@ Reason: The target for "." defined in "exports" is "./../dist/esm/browser.js", h
 Reason: The target for "." defined in "exports" is "./../dist/esm/browser.js", however this value is an invalid subpath or subpath pattern because it includes "..". Falling back to file-based resolution.
  WARN  Attempted to import the module "/app/node_modules/expo-asset/build/resolveAssetSource" which is not listed in the "exports" of "/app/node_modules/expo-asset" under the requested subpath "./build/resolveAssetSource". Falling back to file-based resolution. Consider updating the call site or asking the package maintainer(s) to expose this API.
  WARN  Attempted to import the module "/app/node_modules/expo-asset/build/resolveAssetSource" which is not listed in the "exports" of "/app/node_modules/expo-asset" under the requested subpath "./build/resolveAssetSource". Falling back to file-based resolution. Consider updating the call site or asking the package maintainer(s) to expose this API.
-Web Bundling failed 12038ms apps/mobile/index.js (6500 modules)
-Error: Unable to resolve module ./wa-sqlite/wa-sqlite.wasm from /app/node_modules/expo-sqlite/web/worker.ts:
-
-None of these files exist:
-  * ../../node_modules/expo-sqlite/web/wa-sqlite/wa-sqlite.wasm(.web.ts|.ts|.web.tsx|.tsx|.web.mjs|.mjs|.web.js|.js|.web.jsx|.jsx|.web.json|.json|.web.cjs|.cjs|.web.scss|.scss|.web.sass|.sass|.web.css|.css|.web.svg|.svg|.web.css|.css)
-  * ../../node_modules/expo-sqlite/web/wa-sqlite/wa-sqlite.wasm
-[0m [90m 20 |[39m [36mimport[39m [33mWaSQLiteFactory[39m [36mfrom[39m [32m'./wa-sqlite/wa-sqlite'[39m[33m;[39m
- [90m 21 |[39m [90m// @ts-expect-error wasm module is not typed[39m
-[31m[1m>[22m[39m[90m 22 |[39m [36mimport[39m wasmModule [36mfrom[39m [32m'./wa-sqlite/wa-sqlite.wasm'[39m[33m;[39m
- [90m    |[39m                         [31m[1m^[22m[39m
- [90m 23 |[39m [36mimport[39m {
- [90m 24 |[39m   type [33mSQLiteWorkerMessage[39m[33m,[39m
- [90m 25 |[39m   type [33mSQLiteWorkerMessageType[39m[33m,[39m[0m
-
-Import stack:
-
- node_modules/expo-sqlite/web/worker.ts
- | import "./wa-sqlite/wa-sqlite.wasm"
-
- node_modules/expo-sqlite/web/SQLiteModule.ts
- | import "./worker"
-
- node_modules/expo-sqlite/build/ExpoSQLite.web.js
- | import "../web/SQLiteModule"
-
- node_modules/expo-sqlite/build/SQLiteDatabase.js
- | import "./ExpoSQLite"
-
- node_modules/expo-sqlite/build/index.js
- | import "./SQLiteDatabase"
-
- apps/mobile/services/local/db.ts
- | import "expo-sqlite"
-
- apps/mobile/services/local/repository.ts
- | import "./db"
-
- apps/mobile/services/local/browsing.ts
- | import "@/services/local/repository"
-
- apps/mobile/services/backend/browsing.ts
- | import "@/services/local/browsing"
-
- apps/mobile/components/artists/ArtistDetail.tsx
- | import "@/services/backend/browsing"
-
- apps/mobile/app/(app)/(tabs)/(library)/artists/[id].tsx
- | import "@/components/artists/ArtistDetail"
-
- apps/mobile/app (require.context)
+λ Bundled 10884ms node_modules/@expo/router-server/node/render.js (6780 modules)
+Invariant Violation: __fbBatchedBridgeConfig is not set, cannot invoke native modules
+Invariant Violation: __fbBatchedBridgeConfig is not set, cannot invoke native modules
+    at m.exports (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:73:281)
+    at /app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:18383:1766
+    at f (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:2068)
+    at a (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:1564)
+    at i (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:586)
+    at /app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:18382:396
+    at f (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:2068)
+    at a (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:1564)
+    at i (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:586)
+    at /app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:18504:412
+    at f (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:2068)
+    at a (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:1564)
+    at i (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:586)
+    at /app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:18497:113
+    at f (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:2068)
+    at a (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:1564)
+    at i (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:586)
+    at Object.n (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:18492:228)
+    at /app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:18491:57
+    at f (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:2068)
+    at a (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:1492)
+    at i (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:3:586)
+    at Object.<anonymous> (/app/node_modules/@expo/router-server/node/render.js.bundle?platform=web&dev=false&hot=false&minify=true&transform.engine=hermes&transform.routerRoot=app&resolver.environment=node&transform.environment=node&resolver.exporting=true&unstable_transformProfile=hermes-stable:19217:18)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at compileModule (/app/node_modules/@expo/cli/node_modules/@expo/require-utils/build/load.js:237:9)
+    at evalModule (/app/node_modules/@expo/cli/node_modules/@expo/require-utils/build/load.js:361:17)
+    at evalMetroNoHandling (/app/node_modules/@expo/cli/build/src/start/server/getStaticRenderFunctions.js:154:82)
+    at evalMetroAndWrapFunctions (/app/node_modules/@expo/cli/build/src/start/server/getStaticRenderFunctions.js:111:22)
+    at MetroBundlerDevServer.ssrLoadModule (/app/node_modules/@expo/cli/build/src/start/server/metro/MetroBundlerDevServer.js:1745:76)
+    at async MetroBundlerDevServer.getStaticRenderFunctionAsync (/app/node_modules/@expo/cli/build/src/start/server/metro/MetroBundlerDevServer.js:388:84)
+    at async Promise.all (index 1)
+    at async exportFromServerAsync (/app/node_modules/@expo/cli/build/src/export/exportStaticAsync.js:201:88)
+    at async exportAppAsync (/app/node_modules/@expo/cli/build/src/export/exportApp.js:375:17)
+    at async exportAsync (/app/node_modules/@expo/cli/build/src/export/exportAsync.js:91:5)

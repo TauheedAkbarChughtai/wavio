@@ -525,9 +525,7 @@ function applyLockScreen(p: AudioPlayer, track: QueueTrack) {
       p.setActiveForLockScreen(true, metadata, {
         showSeekBackward: true,
         showSeekForward: true,
-        showSkipPrevious: true,
-        showSkipNext: true,
-      });
+      } as any);
       lockScreenActive = true;
     }
   } catch (error) {
@@ -929,12 +927,12 @@ const remoteListeners: ReturnType<AudioPlayer["addListener"]>[] = [];
 const statusListeners: ReturnType<AudioPlayer["addListener"]>[] = [];
 
 remoteListeners.push(
-  player.addListener("remotePrevious", () => {
+  player.addListener("remotePrevious" as any, () => {
     skipPrevious();
   }),
 );
 remoteListeners.push(
-  player.addListener("remoteNext", () => {
+  player.addListener("remoteNext" as any, () => {
     skipNext();
   }),
 );
